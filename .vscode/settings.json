@@ -1,0 +1,4 @@
+{
+    "python.pythonPath": "d:\\project\\Blokk\\venv\\Scripts\\python.exe",
+    "python.formatting.provider": "autopep8"
+}
