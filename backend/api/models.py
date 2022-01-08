@@ -56,12 +56,10 @@ class User(AbstractUser):
     def get_privatekey(self):
         return self.privatekey
 
-
 class Currency(models.Model):
     name = models.CharField(max_length=100)
     symbol = models.CharField(max_length=10)
     invite_code = models.CharField(max_length=100, blank=True, null=True)
-    users = models.ManyToManyField(User, blank=True, related_name='currencies')
     admin = models.ForeignKey(User, on_delete=models.CASCADE, related_name='admin')
     market_cap = models.IntegerField(default=-1)
     # ledger = models.ForeignKey('Ledger', on_delete=models.CASCADE, related_name='currencies', blank=True, null=True)
@@ -83,3 +81,25 @@ class Currency(models.Model):
         self.save()
         self.generateInvite()
         return self
+    
+    def get_users(self):
+        return self.wallets.all().values_list('user', flat=True)
+
+
+class Wallet(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wallets')
+    balance = models.IntegerField(default=0)
+    currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name='wallets')
+
+    def __str__(self):
+        return f'{self.user.username}\'s wallet'
+
+    def deposit(self, amount):
+        self.balance += amount
+        self.save()
+        return self.balance
+    
+    def withdraw(self, amount):
+        self.balance -= amount
+        self.save()
+        return self.balance
