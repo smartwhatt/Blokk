@@ -15,7 +15,7 @@ class User(AbstractUser):
     publickey = models.TextField(max_length=5000, blank=True, null=True)
     privatekey = models.TextField(max_length=5000, blank=True, null=True)
 
-    pfp = models.ImageField(upload_to=pfp_path, blank=True, null=True)
+    pfp = models.ImageField(upload_to=pfp_path, blank=True, null=True, default=None)
 
 
     USERNAME_FIELD = 'username'
@@ -123,6 +123,11 @@ class Transaction(models.Model):
     amount = models.IntegerField()
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name='transactions')
 
+    before_sender_amount_snapshot = models.IntegerField(default=0)
+    before_receiver_amount_snapshot = models.IntegerField(default=0) 
+    after_sender_amount_snapshot = models.IntegerField(default=0)
+    after_receiver_amount_snapshot = models.IntegerField(default=0)
+
     def __str__(self):
         return f'{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}'
 
@@ -133,9 +138,20 @@ class Transaction(models.Model):
                 self.receiver = receiver
                 self.amount = amount
                 self.currency = currency
+                self.before_sender_amount_snapshot = sender.balance
+                self.before_receiver_amount_snapshot = receiver.balance
                 self.save()
                 sender.withdraw(amount)
                 receiver.deposit(amount)
+                self.after_sender_amount_snapshot = sender.balance
+                self.after_receiver_amount_snapshot = receiver.balance
                 return self
+            return None
         else:
             return None
+    
+    def validate_currency(self):
+        return self.sender.currency == self.currency and self.receiver.currency == self.currency
+    
+    def validate_amount(self):
+        return self.sender_amount_snapshot - self.amount == self.after_sender_amount_snapshot and self.receiver_amount_snapshot + self.amount == self.after_receiver_amount_snapshot
