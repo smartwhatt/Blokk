@@ -40,6 +40,11 @@ class User(AbstractUser):
         self.save()
         return self
     
+    def save(self, *args, **kwargs):
+        if not self.publickey or not self.privatekey:
+            self.generateKey()
+        super().save(*args, **kwargs)
+
     def create_superuser(self, username, email, password):
         self.username = username
         self.email = email
@@ -62,6 +67,8 @@ class Currency(models.Model):
     invite_code = models.CharField(max_length=100, blank=True, null=True)
     admin = models.ForeignKey(User, on_delete=models.CASCADE, related_name='admin')
     market_cap = models.IntegerField(default=-1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     # ledger = models.ForeignKey('Ledger', on_delete=models.CASCADE, related_name='currencies', blank=True, null=True)
 
 
@@ -81,6 +88,10 @@ class Currency(models.Model):
         self.save()
         self.generateInvite()
         return self
+    def save(self):
+        if self.invite_code == None:
+            self.generateInvite()
+        super().save()
     
     def get_users(self):
         return self.wallets.all().values_list('user', flat=True)
@@ -98,6 +109,8 @@ class Wallet(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='wallets')
     balance = models.IntegerField(default=0)
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name='wallets')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f'{self.user.username}\'s wallet'
@@ -122,6 +135,7 @@ class Transaction(models.Model):
     receiver = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='received')
     amount = models.IntegerField()
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name='transactions')
+    created_at = models.DateTimeField(auto_now_add=True)
 
     before_sender_amount_snapshot = models.IntegerField(default=0)
     before_receiver_amount_snapshot = models.IntegerField(default=0) 
