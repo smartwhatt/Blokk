@@ -84,6 +84,14 @@ class Currency(models.Model):
     
     def get_users(self):
         return self.wallets.all().values_list('user', flat=True)
+    
+    def validate_invite(self):
+        signer = Signer()
+        return self.invite_code == signer.unsign(self.invite_code)
+    
+    def validate_cap(self):
+        total = self.wallets.all().aggregate(models.Sum('balance'))['balance__sum']
+        return total <= self.market_cap
 
 
 class Wallet(models.Model):
@@ -103,10 +111,15 @@ class Wallet(models.Model):
         self.balance -= amount
         self.save()
         return self.balance
+    
+    def validate_amount(self):
+        amount_earn = self.received.all().aggregate(models.Sum('amount'))['amount__sum']
+        amount_spend = self.sent.all().aggregate(models.Sum('amount'))['amount__sum']
+        return amount_earn - amount_spend == self.balance
 
 class Transaction(models.Model):
-    sender = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='sender')
-    receiver = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='receiver')
+    sender = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='sent')
+    receiver = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='received')
     amount = models.IntegerField()
     currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name='transactions')
 
