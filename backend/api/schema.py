@@ -53,14 +53,18 @@ class Query(graphene.ObjectType):
     transactions_by_currency = graphene.List(TransactionType, currency=graphene.String(
     ), description="List of all transactions of a currency")
 
-    all_currencies = graphene.List(CurrencyType, description="List of all currencies")
-    currency_by_id = graphene.Field(CurrencyType, id=graphene.Int(), description="Get currency by id")
-    currency_by_symbol = graphene.Field(CurrencyType, symbol=graphene.String(), description="Get currency by symbol")
+    all_currencies = graphene.List(
+        CurrencyType, description="List of all currencies")
+    currency_by_id = graphene.Field(
+        CurrencyType, id=graphene.Int(), description="Get currency by id")
+    currency_by_symbol = graphene.Field(
+        CurrencyType, symbol=graphene.String(), description="Get currency by symbol")
     search_currencies_by_name = graphene.List(
         CurrencyType, name=graphene.String(), description="Search currencies by name")
     currency_by_invite_code = graphene.Field(
         CurrencyType, invite_code=graphene.String(), description="Get currency by invite code")
-    currencies_by_admin = graphene.List(CurrencyType, admin=graphene.String(), description="List of all currencies of a user")
+    currencies_by_admin = graphene.List(CurrencyType, admin=graphene.String(
+    ), description="List of all currencies of a user")
 
     def resolve_all_users(self, info, **kwargs):
         return User.objects.all()
