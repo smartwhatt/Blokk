@@ -174,6 +174,18 @@ class Transaction(models.Model):
             return None
         else:
             return None
+    
+    def save(self):
+        if self.sender.currency == self.currency and self.receiver.currency == self.currency:
+            self.before_sender_amount_snapshot = self.sender.balance
+            self.before_receiver_amount_snapshot = self.receiver.balance
+            super().save()
+            if self.sender.balance >= self.amount:
+                self.sender.withdraw(self.amount)
+                self.receiver.deposit(self.amount)
+                self.after_sender_amount_snapshot = self.sender.balance
+                self.after_receiver_amount_snapshot = self.receiver.balance
+                super().save()
 
     def validate_currency(self):
         return self.sender.currency == self.currency and self.receiver.currency == self.currency
