@@ -103,3 +103,26 @@ class Wallet(models.Model):
         self.balance -= amount
         self.save()
         return self.balance
+
+class Transaction(models.Model):
+    sender = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='sender')
+    receiver = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='receiver')
+    amount = models.IntegerField()
+    currency = models.ForeignKey(Currency, on_delete=models.CASCADE, related_name='transactions')
+
+    def __str__(self):
+        return f'{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}'
+
+    def create(self, sender, receiver, amount, currency):
+        if sender.currency == currency and receiver.currency == currency:
+            if sender.balance >= amount:
+                self.sender = sender
+                self.receiver = receiver
+                self.amount = amount
+                self.currency = currency
+                self.save()
+                sender.withdraw(amount)
+                receiver.deposit(amount)
+                return self
+        else:
+            return None
