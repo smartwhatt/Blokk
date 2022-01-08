@@ -1,8 +1,10 @@
+# Modules import
 import rsa
 
-
+# Django import
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.signing import Signer
 # Create your models here.
 
 
@@ -53,3 +55,31 @@ class User(AbstractUser):
     
     def get_privatekey(self):
         return self.privatekey
+
+
+class Currency(models.Model):
+    name = models.CharField(max_length=100)
+    symbol = models.CharField(max_length=10)
+    invite_code = models.CharField(max_length=100, blank=True, null=True)
+    users = models.ManyToManyField(User, blank=True, related_name='currencies')
+    admin = models.ForeignKey(User, on_delete=models.CASCADE, related_name='admin')
+    market_cap = models.IntegerField(default=-1)
+    # ledger = models.ForeignKey('Ledger', on_delete=models.CASCADE, related_name='currencies', blank=True, null=True)
+
+
+    def __str__(self):
+        return self.name
+
+    def generateInvite(self):
+        signer = Signer()
+        self.invite_code = signer.sign(f"{self.id}-{self.name}-{self.symbol}")
+        self.save()
+        return self.invite_code
+    
+    def create(self, name, symbol, admin):
+        self.name = name
+        self.symbol = symbol
+        self.admin = admin
+        self.save()
+        self.generateInvite()
+        return self
