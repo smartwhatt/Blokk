@@ -7,12 +7,13 @@ class UserType(DjangoObjectType):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name',
-                  'is_staff', 'is_superuser', 'is_active', 'date_joined', 'publickey')
+                  'is_staff', 'is_superuser', 'is_active', 'date_joined')
 
 
 class WalletType(DjangoObjectType):
     class Meta:
         model = Wallet
+        fields = ('id', 'user', 'currency', 'balance', 'created_at', 'updated_at', 'publickey')
 
 
 class TransactionType(DjangoObjectType):

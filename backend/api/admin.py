@@ -27,10 +27,31 @@ class WalletAdmin(admin.ModelAdmin):
     list_filter = ('user', 'currency')
     readonly_fields = ('created_at', 'updated_at', 'publickey', 'privatekey')
 
+    add_fieldsets = (
+        (None, {'fields': ('user', 'currency', 'balance')}),
+    )
+
+    fieldsets = (
+        (None, {'fields': ('user', 'currency', 'balance')}),
+        ('Private Key', {'fields': ('publickey', 'privatekey')}),
+        ('Important dates', {'fields': ('created_at', 'updated_at')}),
+    )
+
 class TransactionAdmin(admin.ModelAdmin):
     list_display = ('sender', 'receiver', 'amount', 'currency', 'created_at')
     search_fields = ('sender', 'receiver', 'amount', 'currency')
     list_filter = ('sender', 'receiver', 'amount', 'currency')
+
+    add_fieldsets = (
+        (None, {'fields': ('sender', 'receiver', 'amount', 'currency')}),
+    )
+
+    fieldsets = (
+        (None, {'fields': ('sender', 'receiver', 'amount', 'currency')}),
+        ('Important dates', {'fields': ('created_at',)}),
+    )
+
+    readonly_fields = ('created_at',)
 
 class CurrencyAdmin(admin.ModelAdmin):
     list_display = ('name', 'symbol', 'admin')
