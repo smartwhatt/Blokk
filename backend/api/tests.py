@@ -60,3 +60,5 @@ class AuthendicationTestCase(TestCase):
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.count(), 2)
+        self.assertEqual(User.objects.get(id=2).username, 'foobar')
+        
