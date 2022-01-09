@@ -48,10 +48,13 @@ class TransactionAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {'fields': ('sender', 'receiver', 'amount', 'currency')}),
+        ('Signature', {'fields': ('sender_signature','receiver_signature')}),
         ('Important dates', {'fields': ('created_at',)}),
+        ("Before Balance", {'fields': ('before_sender_amount_snapshot', 'before_receiver_amount_snapshot')}),
+        ("After Balance", {'fields': ('after_sender_amount_snapshot', 'after_receiver_amount_snapshot')}),
     )
 
-    readonly_fields = ('created_at',)
+    readonly_fields = ('created_at','sender_signature','receiver_signature', 'before_sender_amount_snapshot', 'before_receiver_amount_snapshot', 'after_sender_amount_snapshot', 'after_receiver_amount_snapshot')
 
 class CurrencyAdmin(admin.ModelAdmin):
     list_display = ('name', 'symbol', 'admin')
