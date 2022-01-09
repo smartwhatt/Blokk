@@ -61,4 +61,16 @@ class AuthendicationTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.count(), 2)
         self.assertEqual(User.objects.get(id=2).username, 'foobar')
+    
+    def test_login_api_view(self):
+        """Test that the login API view login an existing user."""
+        url = reverse('token_obtain_pair')
+        data = {
+            'username': 'testuser',
+            'password': 'testpass'
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertNotEqual(response.data['refresh'], '')
+        self.assertNotEqual(response.data['access'], '')
         

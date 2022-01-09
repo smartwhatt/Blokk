@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     "graphene_django",
+    'rest_framework_simplejwt',
     "api",
 ]
 
@@ -132,4 +133,10 @@ STATIC_URL = '/static/'
 
 GRAPHENE = {
     "SCHEMA": "api.schema.schema"
+}
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
 }
