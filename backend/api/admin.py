@@ -4,7 +4,7 @@ from .models import *
 
 # Admin
 class UserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'is_staff', 'is_active', 'is_superuser', "publickey")
+    list_display = ('username', 'email', 'is_staff', 'is_active', 'is_superuser')
     list_filter = ('is_staff', 'is_superuser', 'is_active')
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
@@ -20,11 +20,12 @@ class UserAdmin(UserAdmin):
     )
     search_fields = ('username', 'email')
     ordering = ('username',)
-    readonly_fields = ('last_login', 'date_joined', 'publickey', 'privatekey')
+    readonly_fields = ('last_login', 'date_joined')
 class WalletAdmin(admin.ModelAdmin):
-    list_display = ('user', 'currency', 'balance', 'created_at', 'updated_at')
+    list_display = ('user', 'currency', 'balance', 'created_at', 'updated_at', 'publickey')
     search_fields = ('user', 'currency')
     list_filter = ('user', 'currency')
+    readonly_fields = ('created_at', 'updated_at', 'publickey', 'privatekey')
 
 class TransactionAdmin(admin.ModelAdmin):
     list_display = ('sender', 'receiver', 'amount', 'currency', 'created_at')
