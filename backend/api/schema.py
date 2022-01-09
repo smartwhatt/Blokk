@@ -7,7 +7,7 @@ class UserType(DjangoObjectType):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'first_name', 'last_name',
-                  'is_staff', 'is_superuser', 'is_active', 'date_joined', "publickey")
+                  'is_staff', 'is_superuser', 'is_active', 'date_joined', 'publickey')
 
 
 class WalletType(DjangoObjectType):
@@ -37,8 +37,8 @@ class Query(graphene.ObjectType):
         WalletType, id=graphene.Int(), description="Get wallet by id")
     wallets_by_user = graphene.List(
         WalletType, user=graphene.String(), description="List of all wallets of a user")
-    wallets_by_currency = graphene.List(WalletType, currency=graphene.String(
-    ), description="List of all wallets of a currency")
+    wallets_by_currency = graphene.List(WalletType,
+                                        currency=graphene.String(), description="List of all wallets of a currency")
 
     all_transactions = graphene.List(
         TransactionType, description="List of all transactions")
