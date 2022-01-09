@@ -4,7 +4,7 @@ from .models import *
 
 # Admin
 class UserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'is_staff', 'is_active', 'is_superuser', "publickey")
+    list_display = ('username', 'email', 'is_staff', 'is_active', 'is_superuser')
     list_filter = ('is_staff', 'is_superuser', 'is_active')
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
@@ -20,16 +20,41 @@ class UserAdmin(UserAdmin):
     )
     search_fields = ('username', 'email')
     ordering = ('username',)
-    readonly_fields = ('last_login', 'date_joined', 'publickey', 'privatekey')
+    readonly_fields = ('last_login', 'date_joined')
 class WalletAdmin(admin.ModelAdmin):
-    list_display = ('user', 'currency', 'balance', 'created_at', 'updated_at')
+    list_display = ('user', 'currency', 'balance', 'created_at', 'updated_at', 'publickey')
     search_fields = ('user', 'currency')
     list_filter = ('user', 'currency')
+    readonly_fields = ('created_at', 'updated_at', 'publickey', 'privatekey')
+
+    add_fieldsets = (
+        (None, {'fields': ('user', 'currency', 'balance')}),
+    )
+
+    fieldsets = (
+        (None, {'fields': ('user', 'currency', 'balance')}),
+        ('Private Key', {'fields': ('publickey', 'privatekey')}),
+        ('Important dates', {'fields': ('created_at', 'updated_at')}),
+    )
 
 class TransactionAdmin(admin.ModelAdmin):
     list_display = ('sender', 'receiver', 'amount', 'currency', 'created_at')
     search_fields = ('sender', 'receiver', 'amount', 'currency')
     list_filter = ('sender', 'receiver', 'amount', 'currency')
+
+    add_fieldsets = (
+        (None, {'fields': ('sender', 'receiver', 'amount', 'currency')}),
+    )
+
+    fieldsets = (
+        (None, {'fields': ('sender', 'receiver', 'amount', 'currency')}),
+        ('Signature', {'fields': ('sender_signature','receiver_signature')}),
+        ('Important dates', {'fields': ('created_at',)}),
+        ("Before Balance", {'fields': ('before_sender_amount_snapshot', 'before_receiver_amount_snapshot')}),
+        ("After Balance", {'fields': ('after_sender_amount_snapshot', 'after_receiver_amount_snapshot')}),
+    )
+
+    readonly_fields = ('created_at','sender_signature','receiver_signature', 'before_sender_amount_snapshot', 'before_receiver_amount_snapshot', 'after_sender_amount_snapshot', 'after_receiver_amount_snapshot')
 
 class CurrencyAdmin(admin.ModelAdmin):
     list_display = ('name', 'symbol', 'admin')

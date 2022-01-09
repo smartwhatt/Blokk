@@ -1,5 +1,11 @@
 # Modules import
-import rsa
+# import rsa
+from Crypto.PublicKey import RSA
+from Crypto.Signature.pkcs1_15 import PKCS115_SigScheme
+from Crypto.Hash import SHA256
+import binascii
+
+
 
 # Django import
 from django.db import models
@@ -13,9 +19,6 @@ def pfp_path(instance, filename):
 
 
 class User(AbstractUser):
-    publickey = models.TextField(max_length=5000, blank=True, null=True)
-    privatekey = models.TextField(max_length=5000, blank=True, null=True)
-
     pfp = models.ImageField(
         upload_to=pfp_path, blank=True, null=True, default=None)
 
@@ -25,25 +28,14 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 
-    def generateKey(self):
-        (pubkey, privkey) = rsa.newkeys(2048)
-        self.publickey = pubkey.save_pkcs1()
-        self.privatekey = privkey.save_pkcs1()
-        self.save()
-        return (pubkey, privkey)
+    
 
     def create_user(self, username, email, password):
         self.username = username
         self.email = email
         self.set_password(password)
-        self.generateKey()
         self.save()
         return self
-
-    def save(self, *args, **kwargs):
-        if not self.publickey or not self.privatekey:
-            self.generateKey()
-        super().save(*args, **kwargs)
 
     def create_superuser(self, username, email, password):
         self.username = username
@@ -51,15 +43,8 @@ class User(AbstractUser):
         self.set_password(password)
         self.is_superuser = True
         self.is_staff = True
-        self.generateKey()
         self.save()
         return self
-
-    def get_publickey(self):
-        return self.publickey
-
-    def get_privatekey(self):
-        return self.privatekey
 
 
 class Currency(models.Model):
@@ -117,6 +102,9 @@ class Wallet(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    publickey = models.TextField(max_length=5000, blank=True, null=True)
+    privatekey = models.TextField(max_length=5000, blank=True, null=True)
+
     def __str__(self):
         return f'{self.user.username}\'s wallet'
 
@@ -137,6 +125,35 @@ class Wallet(models.Model):
             models.Sum('amount'))['amount__sum']
         return amount_earn - amount_spend == self.balance
 
+    def generateKey(self):
+        keyPair = RSA.generate(2048)
+        self.publickey = keyPair.publickey().export_key().decode('ascii')
+        self.privatekey = keyPair.export_key().decode('ascii')
+        self.save()
+        return keyPair
+    
+    def save(self, *args, **kwargs):
+        if not self.publickey or not self.privatekey:
+            self.generateKey()
+        super().save(*args, **kwargs)
+    
+    def create(self, user, currency):
+        self.user = user
+        self.currency = currency
+        self.save()
+        return self
+    
+    def get_publickey(self):
+        return self.publickey
+
+    def get_privatekey(self):
+        return self.privatekey
+    
+    def sign(self, message):
+        hash = SHA256.new(message.encode('utf-8'))
+        signer = PKCS115_SigScheme(RSA.import_key(self.privatekey))
+        signature = signer.sign(hash)
+        return binascii.hexlify(signature).decode('ascii')
 
 class Transaction(models.Model):
     sender = models.ForeignKey(
@@ -147,6 +164,9 @@ class Transaction(models.Model):
     currency = models.ForeignKey(
         Currency, on_delete=models.CASCADE, related_name='transactions')
     created_at = models.DateTimeField(auto_now_add=True)
+    sender_signature = models.TextField(max_length=5000, blank=True, null=True)
+    receiver_signature = models.TextField(max_length=5000, blank=True, null=True)
+
 
     before_sender_amount_snapshot = models.IntegerField(default=0)
     before_receiver_amount_snapshot = models.IntegerField(default=0)
@@ -156,6 +176,12 @@ class Transaction(models.Model):
     def __str__(self):
         return f'{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}'
 
+    
+    def validate_signature(self):
+        verifier = PKCS115_SigScheme(RSA.import_key(self.receiver.publickey))
+        hash = SHA256.new(f"{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}".encode('utf-8'))
+        return verifier.verify(hash, binascii.unhexlify(self.sender_signature))
+
     def create(self, sender, receiver, amount, currency):
         if sender.currency == currency and receiver.currency == currency:
             if sender.balance >= amount:
@@ -163,13 +189,7 @@ class Transaction(models.Model):
                 self.receiver = receiver
                 self.amount = amount
                 self.currency = currency
-                self.before_sender_amount_snapshot = sender.balance
-                self.before_receiver_amount_snapshot = receiver.balance
                 self.save()
-                sender.withdraw(amount)
-                receiver.deposit(amount)
-                self.after_sender_amount_snapshot = sender.balance
-                self.after_receiver_amount_snapshot = receiver.balance
                 return self
             return None
         else:
@@ -179,6 +199,8 @@ class Transaction(models.Model):
         if self.sender.currency == self.currency and self.receiver.currency == self.currency:
             self.before_sender_amount_snapshot = self.sender.balance
             self.before_receiver_amount_snapshot = self.receiver.balance
+            self.sender_signature = self.sender.sign(f"{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}")
+            self.receiver_signature = self.receiver.sign(f"{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}")
             super().save()
             if self.sender.balance >= self.amount:
                 self.sender.withdraw(self.amount)
