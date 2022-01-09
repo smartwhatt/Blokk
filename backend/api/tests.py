@@ -106,3 +106,22 @@ class AuthendicationTestCase(TestCase):
         self.assertNotEqual(response.data['access'], '')
         self.assertNotEqual(response.data['access'], old_token)
     
+    def test_logout_api_view(self):
+        """Test that the logout API view logout an existing user."""
+        url = reverse('login')
+        
+        # Obtain a token
+        data = {
+            'username': 'testuser',
+            'password': 'testpass'
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        old_token = response.data['access']
+
+        # Refresh the token
+        url = reverse('logout')
+        response = self.client.post(url, format='json', HTTP_AUTHORIZATION=f'Bearer {old_token}')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['access'], '')
+        

@@ -67,3 +67,5 @@ def logout(request):
     if request.user.is_authenticated:
         request.user.auth_token.delete()
         return Response({'message': 'Logged out'}, status=status.HTTP_200_OK)
+    else:
+        return Response({'message': 'Not logged in'}, status=status.HTTP_401_UNAUTHORIZED)
