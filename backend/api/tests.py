@@ -135,3 +135,27 @@ class AuthendicationTestCase(TestCase):
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_verify_api_view(self):
+        """Test that the verify API view verify an existing user."""
+        url = reverse('login')
+
+        # Obtain a token
+        data = {
+            'username': 'testuser',
+            'password': 'testpass'
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        old_token = response.data['access']
+
+        # Refresh the token
+        url = reverse('verify')
+        data = {
+            'access': response.data['access']
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['username'], 'testuser')
+        self.assertEqual(response.data['email'], 'test@example.com')
+        
