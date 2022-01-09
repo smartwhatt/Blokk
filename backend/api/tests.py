@@ -64,7 +64,7 @@ class AuthendicationTestCase(TestCase):
     
     def test_login_api_view(self):
         """Test that the login API view login an existing user."""
-        url = reverse('token_obtain_pair')
+        url = reverse('login')
         data = {
             'username': 'testuser',
             'password': 'testpass'
@@ -74,9 +74,18 @@ class AuthendicationTestCase(TestCase):
         self.assertNotEqual(response.data['refresh'], '')
         self.assertNotEqual(response.data['access'], '')
 
+        url = reverse('verify')
+        data = {
+            'access': response.data['access']
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['username'], 'testuser')
+        self.assertEqual(response.data['email'], 'test@example.com')
+
     def test_refresh_api_view(self):
         """Test that the refresh API view refresh an existing user."""
-        url = reverse('token_obtain_pair')
+        url = reverse('login')
         
         # Obtain a token
         data = {
@@ -88,7 +97,7 @@ class AuthendicationTestCase(TestCase):
         old_token = response.data['access']
 
         # Refresh the token
-        url = reverse('token_refresh')
+        url = reverse('refresh')
         data = {
             'refresh': response.data['refresh']
         }
@@ -96,3 +105,4 @@ class AuthendicationTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertNotEqual(response.data['access'], '')
         self.assertNotEqual(response.data['access'], old_token)
+    
