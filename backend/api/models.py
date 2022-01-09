@@ -72,13 +72,12 @@ class Currency(models.Model):
         self.symbol = symbol
         self.admin = admin
         self.save()
-        self.generateInvite()
         return self
 
-    def save(self):
+    def save(self, *args, **kwargs):
         if self.invite_code == None:
             self.generateInvite()
-        super().save()
+        super().save(*args, **kwargs)
 
     def get_users(self):
         return self.wallets.all().values_list('user', flat=True)
@@ -195,19 +194,19 @@ class Transaction(models.Model):
         else:
             return None
     
-    def save(self):
+    def save(self,*args, **kwargs):
         if self.sender.currency == self.currency and self.receiver.currency == self.currency:
             self.before_sender_amount_snapshot = self.sender.balance
             self.before_receiver_amount_snapshot = self.receiver.balance
             self.sender_signature = self.sender.sign(f"{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}")
             self.receiver_signature = self.receiver.sign(f"{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}")
-            super().save()
+            super().save(*args, **kwargs)
             if self.sender.balance >= self.amount:
                 self.sender.withdraw(self.amount)
                 self.receiver.deposit(self.amount)
                 self.after_sender_amount_snapshot = self.sender.balance
                 self.after_receiver_amount_snapshot = self.receiver.balance
-                super().save()
+                super().save(*args, **kwargs)
 
     def validate_currency(self):
         return self.sender.currency == self.currency and self.receiver.currency == self.currency
