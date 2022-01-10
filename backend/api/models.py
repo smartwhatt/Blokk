@@ -67,16 +67,16 @@ class Currency(models.Model):
         self.save()
         return self.invite_code
 
-    def create(self, name, symbol, admin):
-        self.name = name
-        self.symbol = symbol
-        self.admin = admin
-        self.save()
-        return self
-
     def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
         if self.invite_code == None:
             self.generateInvite()
+        
+        if self.admin.wallets.filter(currency=self).count() == 0:
+            wallet = Wallet(user=self.admin, currency=self, balance=0)
+            wallet.save()
+            self.admin.wallets.add(wallet)
+        
         super().save(*args, **kwargs)
 
     def get_users(self):
@@ -89,7 +89,10 @@ class Currency(models.Model):
     def validate_cap(self):
         total = self.wallets.all().aggregate(
             models.Sum('balance'))['balance__sum']
-        return total <= self.market_cap
+        return self.market_cap == -1 or total == None or total <= self.market_cap
+    
+    def get_admin_wallet(self):
+        return self.admin.wallets.filter(currency=self).first()
 
 
 class Wallet(models.Model):
@@ -136,11 +139,11 @@ class Wallet(models.Model):
             self.generateKey()
         super().save(*args, **kwargs)
     
-    def create(self, user, currency):
-        self.user = user
-        self.currency = currency
-        self.save()
-        return self
+    # def create(self, user, currency):
+    #     self.user = user
+    #     self.currency = currency
+    #     self.save()
+    #     return self
     
     def get_publickey(self):
         return self.publickey

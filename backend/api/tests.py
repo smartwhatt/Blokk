@@ -158,4 +158,62 @@ class AuthendicationTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['username'], 'testuser')
         self.assertEqual(response.data['email'], 'test@example.com')
+
+
+class CurrencyModelTestCase(TestCase):
+    """Test suite for the currency model."""
+
+    def setUp(self):
+        """Define the test client and other test variables."""
+        self.currency_name = "Bitcoin"
+        self.currency_symbol = "BTC"
         
+        username = "testuser"
+        email = "test@example.com"
+        password = "testpass"
+        self.user = User.objects.create_user(
+            username, email, password)
+
+        self.currency = Currency(name=self.currency_name, symbol=self.currency_symbol, admin=self.user)
+
+        self.signer = Signer()
+
+
+    def test_model_can_create_a_currency(self):
+        """Test the currency model can create a currency."""
+        old_count = Currency.objects.count()
+        self.currency.save()
+        new_count = Currency.objects.count()
+        self.assertNotEqual(old_count, new_count)
+
+    def test_model_can_create_a_currency_with_name(self):
+        """Test the currency model can create a currency with a name."""
+        self.assertEqual(self.currency.name, self.currency_name)
+
+    def test_model_can_create_a_currency_with_symbol(self):
+        """Test the currency model can create a currency with a symbol."""
+        self.assertEqual(self.currency.symbol, self.currency_symbol)
+    
+    def test_model_can_create_a_currency_with_admin(self):
+        """Test the currency model can create a currency with an admin."""
+        self.assertEqual(self.currency.admin, self.user)
+
+    def test_model_can_create_a_currency_with_invite_code(self):
+        """Test the currency model can create a currency with an invite code."""
+        self.currency.save()
+        self.assertEqual(self.currency.invite_code, self.signer.sign(f"{self.currency.id}-{self.currency.name}-{self.currency.symbol}"))
+        self.assertTrue(self.currency.validate_invite)
+
+    def test_model_can_create_a_currency_with_market_cap(self):
+        """Test the currency model can create a currency with a market cap."""
+        self.currency.save()
+        # print(self.currency.market_cap)
+        self.assertEqual(self.currency.market_cap, -1)
+        self.assertTrue(self.currency.validate_cap())
+    
+    def test_model_can_create_wallet_for_admin(self):
+        """Test the currency model can create a wallet for the admin."""
+        self.currency.save()
+        adminWallet = Wallet.objects.filter(user=self.user, currency=self.currency).first()
+        self.assertEqual(adminWallet.currency, self.currency)
+        self.assertEqual(adminWallet.balance, 0)
