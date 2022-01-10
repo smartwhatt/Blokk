@@ -98,8 +98,9 @@ def currency(request):
 def currency_join(request):
     if request.user.is_authenticated:
         user = request.user
-        currency_id = request.data['currency_id']
-        wallet = Wallet(user=user, currency=currency_id, balance=0)
+        invite_code = request.data['invite_code']
+        currency = Currency.objects.get(invite_code=invite_code)
+        wallet = Wallet(user=user, currency=currency, balance=0)
         wallet.save()
         walletSerializer = WalletSerializers(wallet)
         currencySerializer = CurrencySerializers(currency)
