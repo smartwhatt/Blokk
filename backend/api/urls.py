@@ -13,4 +13,6 @@ urlpatterns = [
     path('refresh', TokenRefreshView.as_view(), name='refresh'),
     path('verify', views.verify, name='verify'),
     path("logout", views.logout, name="logout"),
+
+    path("currency", views.currency, name="currency"),
 ]

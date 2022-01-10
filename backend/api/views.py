@@ -1,10 +1,10 @@
 from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework_simplejwt.tokens import RefreshToken, AccessToken, TokenError, Token
 
-from .serializers import UserSerializers
+from .serializers import *
 from .models import *
 
 # Create your views here.
@@ -67,3 +67,21 @@ def logout(request):
     refresh = RefreshToken(request.data['refresh'])
     refresh.blacklist()
     return Response({'message': 'Logged out'}, status=status.HTTP_205_RESET_CONTENT)
+
+# API view for creating currency
+@api_view(['POST'])
+def currency(request):
+    access = request.data['access']
+    try:
+        token = AccessToken(access)
+        user = User.objects.get(id=token.payload['user_id'])
+        currency_name = request.data['currency_name']
+        currency_symbol = request.data['currency_symbol']
+        currency = Currency.objects.create(
+            name=currency_name, symbol=currency_symbol, admin=user)
+        currency.save()
+        serializer = CurrencySerializers(currency)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    except TokenError:
+        return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
