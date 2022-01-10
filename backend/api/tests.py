@@ -219,7 +219,7 @@ class CurrencyModelTestCase(TestCase):
         self.assertEqual(adminWallet.balance, 0)
     
 
-class CurrencyAPITestCase(APIClient):
+class CurrencyAPITestCase(TestCase):
     """Test suite for the currency API."""
 
     def setUp(self):
@@ -237,6 +237,7 @@ class CurrencyAPITestCase(APIClient):
 
         self.client = APIClient()
 
+
         self.auth_token = self.client.post(
             reverse('login'),
             {'username': 'testuser', 'password': 'testpass'},
@@ -250,10 +251,22 @@ class CurrencyAPITestCase(APIClient):
             'name': "Ethereum",
             'symbol': "ETH"
         }
-        response = self.client.post(url, data, format='json', HTTP_AUTHORIZATION=f'Token {self.auth_token.data["access"]}')
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['name'], "Ethereum")
         self.assertEqual(response.data['symbol'], "ETH")
         self.assertEqual(response.data['admin'], self.user.id)
+    
+    def test_api_try_create_a_currency_without_login(self):
+        """Test the api has currency creation capability."""
+        url = reverse('currency')
+        data = {
+            'name': "Ethereum",
+            'symbol': "ETH"
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+        
 
 
