@@ -13,9 +13,7 @@ jobs:
       matrix:
         python-version: [3.7, 3.8, 3.9]
     
-    env:
-      - name: DJANGO_SECRET
-        value: "{{ secrets.SECRET_KEY }}"
+    
 
     steps:
     - uses: actions/checkout@v2
@@ -30,6 +28,12 @@ jobs:
     - name: Run Migration
       run: python manage.py migrate
       working-directory: ./backend
+      env:
+      - name: DJANGO_SECRET
+        value: "{{ secrets.SECRET_KEY }}"
     - name: Run Tests
       run: python manage.py test
       working-directory: ./backend
+      env:
+      - name: DJANGO_SECRET
+        value: "{{ secrets.SECRET_KEY }}"
