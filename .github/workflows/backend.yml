@@ -19,9 +19,9 @@ jobs:
         cd backend
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-          pip-flags: "--no-cache-dir"
+      with:
+        python-version: ${{ matrix.python-version }}
+        pip-flags: "--no-cache-dir"
     - name: Install Requirements
       run: pip install -r requirements.txt
     - name: Run Migration
