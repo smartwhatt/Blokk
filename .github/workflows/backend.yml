@@ -29,11 +29,9 @@ jobs:
       run: python manage.py migrate
       working-directory: ./backend
       env:
-      - name: DJANGO_SECRET
-        value: "{{ secrets.SECRET_KEY }}"
+      - DJANGO_SECRET: "{{ secrets.SECRET_KEY }}"
     - name: Run Tests
       run: python manage.py test
       working-directory: ./backend
       env:
-      - name: DJANGO_SECRET
-        value: "{{ secrets.SECRET_KEY }}"
+        DJANGO_SECRET: "{{ secrets.SECRET_KEY }}"
