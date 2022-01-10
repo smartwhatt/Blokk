@@ -217,3 +217,43 @@ class CurrencyModelTestCase(TestCase):
         adminWallet = Wallet.objects.filter(user=self.user, currency=self.currency).first()
         self.assertEqual(adminWallet.currency, self.currency)
         self.assertEqual(adminWallet.balance, 0)
+    
+
+class CurrencyAPITestCase(APIClient):
+    """Test suite for the currency API."""
+
+    def setUp(self):
+        """Define the test client and other test variables."""
+        username = "testuser"
+        email = "test@example.com"
+        password = "testpass"
+        self.user = User.objects.create_user(
+            username, email, password)
+        
+        self.currency_name = "Bitcoin"
+        self.currency_symbol = "BTC"
+        self.currency = Currency(name=self.currency_name, symbol=self.currency_symbol, admin=self.user)
+        self.currency.save()
+
+        self.client = APIClient()
+
+        self.auth_token = self.client.post(
+            reverse('login'),
+            {'username': 'testuser', 'password': 'testpass'},
+            format='json'
+        )
+    
+    def test_api_can_create_a_currency(self):
+        """Test the api has currency creation capability."""
+        url = reverse('currency')
+        data = {
+            'name': "Ethereum",
+            'symbol': "ETH"
+        }
+        response = self.client.post(url, data, format='json', HTTP_AUTHORIZATION=f'Token {self.auth_token.data["access"]}')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], "Ethereum")
+        self.assertEqual(response.data['symbol'], "ETH")
+        self.assertEqual(response.data['admin'], self.user.id)
+
+
