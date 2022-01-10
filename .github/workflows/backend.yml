@@ -26,9 +26,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
         pip-flags: "--no-cache-dir"
     - name: Install Requirements
-      run: pip install -r requirements.txt
+      run: pip install -r backend/requirements.txt
     - name: Run Migration
-      run: python manage.py migrate
+      run: python backend/manage.py migrate
     - name: Run Tests
-      run: python manage.py test
+      run: python backend/manage.py test
 
