@@ -229,6 +229,12 @@ class CurrencyAPITestCase(TestCase):
         password = "testpass"
         self.user = User.objects.create_user(
             username, email, password)
+
+        username2 = "testuser2"
+        email2 = "test2@example.com"
+        password2 = "testpass2"
+        self.user2 = User.objects.create_user(
+            username2, email2, password2)
         
         self.currency_name = "Bitcoin"
         self.currency_symbol = "BTC"
@@ -241,6 +247,12 @@ class CurrencyAPITestCase(TestCase):
         self.auth_token = self.client.post(
             reverse('login'),
             {'username': 'testuser', 'password': 'testpass'},
+            format='json'
+        )
+
+        self.auth_token2 = self.client.post(
+            reverse('login'),
+            {'username': 'testuser2', 'password': 'testpass2'},
             format='json'
         )
     
@@ -267,6 +279,17 @@ class CurrencyAPITestCase(TestCase):
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-        
+    
+    def test_join_currency_api(self):
+        """Test the api has currency creation capability."""
+        url = reverse('join')
+        data = {
+            'invite_code': self.currency.invite_code
+        }
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token2.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['currency'], self.currency.id)
+        self.assertContains(response.data['wallet']["id"])
 
 

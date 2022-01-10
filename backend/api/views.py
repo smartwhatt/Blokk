@@ -95,7 +95,7 @@ def currency(request):
 
 # API view for joining currency
 @api_view(['POST'])
-def join_currency(request):
+def currency_join(request):
     if request.user.is_authenticated:
         user = request.user
         currency_id = request.data['currency_id']
