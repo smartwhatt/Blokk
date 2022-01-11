@@ -49,18 +49,29 @@ def login(request):
     else:
         return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-@api_view(['POST'])
+@api_view(['GET','POST'])
 def verify(request):
-    access = request.data['access']
-    try:
-        token = AccessToken(access)
-        user = User.objects.get(id=token.payload['user_id'])
-        return Response({
-            'username': user.username,
-            'email': user.email
-        }, status=status.HTTP_200_OK)
-    except TokenError:
-        return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+    # print("Hallo")
+    if request.method == 'POST':
+        access = request.data['access']
+        try:
+            token = AccessToken(access)
+            user = User.objects.get(id=token.payload['user_id'])
+            return Response({
+                'username': user.username,
+                'email': user.email
+            }, status=status.HTTP_200_OK)
+        except TokenError:
+            return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+    else:
+        
+        if request.user.is_authenticated:
+            return Response({
+                'username': request.user.username,
+                'email': request.user.email
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'User is not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
 def logout(request):
