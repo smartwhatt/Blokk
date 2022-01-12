@@ -21,7 +21,7 @@ class UserSerializers(ModelSerializer):
 class CurrencySerializers(ModelSerializer):
     class Meta:
         model = Currency
-        fields = ('id', 'name', 'symbol', 'admin')
+        fields = ('id', 'name', 'symbol', 'admin', 'created_at', 'updated_at', 'invite_code')
 
 class WalletSerializers(ModelSerializer):
     class Meta:

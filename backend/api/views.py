@@ -49,18 +49,29 @@ def login(request):
     else:
         return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-@api_view(['POST'])
+@api_view(['GET','POST'])
 def verify(request):
-    access = request.data['access']
-    try:
-        token = AccessToken(access)
-        user = User.objects.get(id=token.payload['user_id'])
-        return Response({
-            'username': user.username,
-            'email': user.email
-        }, status=status.HTTP_200_OK)
-    except TokenError:
-        return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+    # print("Hallo")
+    if request.method == 'POST':
+        access = request.data['access']
+        try:
+            token = AccessToken(access)
+            user = User.objects.get(id=token.payload['user_id'])
+            return Response({
+                'username': user.username,
+                'email': user.email
+            }, status=status.HTTP_200_OK)
+        except TokenError:
+            return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+    else:
+        
+        if request.user.is_authenticated:
+            return Response({
+                'username': request.user.username,
+                'email': request.user.email
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({'message': 'User is not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
 
 @api_view(['POST'])
 def logout(request):
@@ -71,17 +82,43 @@ def logout(request):
 # API view for creating currency
 @api_view(['POST'])
 def currency(request):
-    access = request.data['access']
-    try:
-        token = AccessToken(access)
-        user = User.objects.get(id=token.payload['user_id'])
-        currency_name = request.data['currency_name']
-        currency_symbol = request.data['currency_symbol']
-        currency = Currency.objects.create(
-            name=currency_name, symbol=currency_symbol, admin=user)
+    # access = request.headers['Authorization']
+    if request.user.is_authenticated:
+        # token = AccessToken(access)
+        # user = User.objects.get(id=token.payload['user_id'])
+        user = request.user
+        currency_name = request.data['name']
+        currency_symbol = request.data['symbol']
+        currency = Currency(name=currency_name, symbol=currency_symbol, admin=user)
+        currency.save()
+
+        if request.data.get('market_cap'):
+            market_cap = request.data['market_cap']
+            currency.market_cap = market_cap
+
         currency.save()
         serializer = CurrencySerializers(currency)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    except TokenError:
+    else:
+        return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+# API view for joining currency
+@api_view(['POST'])
+def currency_join(request):
+    if request.user.is_authenticated:
+        user = request.user
+        invite_code = request.data['invite_code']
+        currency = Currency.objects.get(invite_code=invite_code)
+        wallet = Wallet(user=user, currency=currency, balance=0)
+        wallet.save()
+        walletSerializer = WalletSerializers(wallet)
+        currencySerializer = CurrencySerializers(currency)
+        return Response({
+            'wallet': walletSerializer.data,
+            'currency': currencySerializer.data
+        }, status=status.HTTP_200_OK)
+
+    else:
         return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)

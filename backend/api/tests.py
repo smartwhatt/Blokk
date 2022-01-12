@@ -219,7 +219,7 @@ class CurrencyModelTestCase(TestCase):
         self.assertEqual(adminWallet.balance, 0)
     
 
-class CurrencyAPITestCase(APIClient):
+class CurrencyAPITestCase(TestCase):
     """Test suite for the currency API."""
 
     def setUp(self):
@@ -229,6 +229,12 @@ class CurrencyAPITestCase(APIClient):
         password = "testpass"
         self.user = User.objects.create_user(
             username, email, password)
+
+        username2 = "testuser2"
+        email2 = "test2@example.com"
+        password2 = "testpass2"
+        self.user2 = User.objects.create_user(
+            username2, email2, password2)
         
         self.currency_name = "Bitcoin"
         self.currency_symbol = "BTC"
@@ -237,9 +243,16 @@ class CurrencyAPITestCase(APIClient):
 
         self.client = APIClient()
 
+
         self.auth_token = self.client.post(
             reverse('login'),
             {'username': 'testuser', 'password': 'testpass'},
+            format='json'
+        )
+
+        self.auth_token2 = self.client.post(
+            reverse('login'),
+            {'username': 'testuser2', 'password': 'testpass2'},
             format='json'
         )
     
@@ -250,10 +263,33 @@ class CurrencyAPITestCase(APIClient):
             'name': "Ethereum",
             'symbol': "ETH"
         }
-        response = self.client.post(url, data, format='json', HTTP_AUTHORIZATION=f'Token {self.auth_token.data["access"]}')
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['name'], "Ethereum")
         self.assertEqual(response.data['symbol'], "ETH")
         self.assertEqual(response.data['admin'], self.user.id)
+    
+    def test_api_try_create_a_currency_without_login(self):
+        """Test the api has currency creation capability."""
+        url = reverse('currency')
+        data = {
+            'name': "Ethereum",
+            'symbol': "ETH"
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+    def test_join_currency_api(self):
+        """Test the api has currency creation capability."""
+        url = reverse('currency_join')
+        data = {
+            'invite_code': self.currency.invite_code
+        }
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token2.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['currency']['id'], self.currency.id)
+        self.assertEqual(response.data['wallet']['user'], self.user2.id)
 
 
