@@ -289,7 +289,7 @@ class CurrencyAPITestCase(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token2.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['currency']["id"], self.currency.id)
-        self.assertEqual(response.data['wallet']["user"], self.user2.id)
+        self.assertEqual(response.data['currency']['id'], self.currency.id)
+        self.assertEqual(response.data['wallet']['user'], self.user2.id)
 
 
