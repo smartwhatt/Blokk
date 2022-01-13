@@ -128,9 +128,14 @@ def currency_join(request):
 @api_view(['POST'])
 def currency_leave(request):
     if request.user.is_authenticated:
-        user = request.user
-        wallet = Wallet.objects.get(user=user)
-        wallet.delete()
+        walletid = request.data['wallet']
+        wallet = Wallet.objects.get(id=walletid)
+
+        if wallet.user == request.user:
+            if wallet.amount > 0:
+                return Response({'message': 'You cannot leave a currency with a balance'}, status=status.HTTP_400_BAD_REQUEST)
+            wallet.delete()
+            return Response({'message': 'Left currency'}, status=status.HTTP_200_OK)
         return Response({'message': 'Left currency'}, status=status.HTTP_200_OK)
     else:
         return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)

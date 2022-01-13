@@ -310,5 +310,20 @@ class CurrencyAPITestCase(TestCase):
         self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token2.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-    
+
+    def test_leave_currency_api(self):
+        """Test the api has currency creation capability."""
+        url = reverse('currency_join')
+        data = {
+            'invite_code': self.currency.invite_code
+        }
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        url = reverse('currency_leave')
+
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, format='json')
+
 
