@@ -110,10 +110,10 @@ def currency_join(request):
     if request.user.is_authenticated:
         user = request.user
         invite_code = request.data['invite_code']
-        currency = Currency.objects.get(invite_code=invite_code)
-        if currency is None:
+        try: 
+            currency = Currency.objects.get(invite_code=invite_code)
+        except Currency.DoesNotExist:
             return Response({'message': 'Invalid invite code'}, status=status.HTTP_404_NOT_FOUND)
-
         wallet = Wallet(user=user, currency=currency, balance=0)
         wallet.save()
         walletSerializer = WalletSerializers(wallet)
@@ -122,7 +122,6 @@ def currency_join(request):
             'wallet': walletSerializer.data,
             'currency': currencySerializer.data
         }, status=status.HTTP_200_OK)
-
     else:
         return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
 
