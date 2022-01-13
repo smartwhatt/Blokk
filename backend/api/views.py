@@ -132,7 +132,7 @@ def currency_leave(request):
         wallet = Wallet.objects.get(id=walletid)
 
         if wallet.user == request.user:
-            if wallet.amount > 0:
+            if wallet.balance > 0:
                 return Response({'message': 'You cannot leave a currency with a balance'}, status=status.HTTP_400_BAD_REQUEST)
             wallet.delete()
             return Response({'message': 'Left currency'}, status=status.HTTP_200_OK)
