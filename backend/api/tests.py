@@ -329,11 +329,43 @@ class CurrencyAPITestCase(TestCase):
         }
         response = self.client.post(url, data=data, format='json')
 
-    def test_leave_currency_api_without_login(self):
+    def test_leave_currency_api_with_invalid_wallet(self):
         """Test the api has currency creation capability."""
         url = reverse('currency_join')
         data = {
             'invite_code': self.currency.invite_code
         }
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        url = reverse('currency_leave')
+
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        data = {
+            'wallet': 10
+        }
+        response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_leave_currency_api_with_wrong_wallet(self):
+        """Test the api has currency creation capability."""
+        url = reverse('currency_join')
+        data = {
+            'invite_code': self.currency.invite_code
+        }
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        url = reverse('currency_leave')
+
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        wallet = Wallet(user=self.user2, currency=self.currency)
+        wallet.save()
+        data = {
+            'wallet': wallet.id
+        }
+
+        response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

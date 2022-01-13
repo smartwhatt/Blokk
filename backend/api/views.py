@@ -129,13 +129,16 @@ def currency_join(request):
 def currency_leave(request):
     if request.user.is_authenticated:
         walletid = request.data['wallet']
-        wallet = Wallet.objects.get(id=walletid)
+        try:
+            wallet = Wallet.objects.get(id=walletid)
+        except Wallet.DoesNotExist:
+            return Response({'message': 'Invalid wallet id'}, status=status.HTTP_404_NOT_FOUND)
 
         if wallet.user == request.user:
             if wallet.balance > 0:
                 return Response({'message': 'You cannot leave a currency with a balance'}, status=status.HTTP_400_BAD_REQUEST)
             wallet.delete()
             return Response({'message': 'Left currency'}, status=status.HTTP_200_OK)
-        return Response({'message': 'Left currency'}, status=status.HTTP_200_OK)
+        return Response({'message': 'You are not the owner of this wallet'}, status=status.HTTP_401_UNAUTHORIZED)
     else:
         return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
