@@ -23,13 +23,14 @@ def register(request):
     user = User.objects.create_user(
         username=username, email=email, password=password)
     user.save()
-    
+
     refresh = RefreshToken.for_user(user)
     access = AccessToken.for_user(user)
     return Response({
         'refresh': str(refresh),
         'access': str(access)
     }, status=status.HTTP_201_CREATED)
+
 
 @api_view(['POST'])
 def login(request):
@@ -49,7 +50,8 @@ def login(request):
     else:
         return Response({'message': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
-@api_view(['GET','POST'])
+
+@api_view(['GET', 'POST'])
 def verify(request):
     # print("Hallo")
     if request.method == 'POST':
@@ -64,7 +66,7 @@ def verify(request):
         except TokenError:
             return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
     else:
-        
+
         if request.user.is_authenticated:
             return Response({
                 'username': request.user.username,
@@ -73,6 +75,7 @@ def verify(request):
         else:
             return Response({'message': 'User is not authenticated'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
 @api_view(['POST'])
 def logout(request):
     refresh = RefreshToken(request.data['refresh'])
@@ -80,6 +83,8 @@ def logout(request):
     return Response({'message': 'Logged out'}, status=status.HTTP_205_RESET_CONTENT)
 
 # API view for creating currency
+
+
 @api_view(['POST'])
 def currency(request):
     # access = request.headers['Authorization']
@@ -89,7 +94,8 @@ def currency(request):
         user = request.user
         currency_name = request.data['name']
         currency_symbol = request.data['symbol']
-        currency = Currency(name=currency_name, symbol=currency_symbol, admin=user)
+        currency = Currency(name=currency_name,
+                            symbol=currency_symbol, admin=user)
         currency.save()
 
         if request.data.get('market_cap'):
@@ -110,7 +116,7 @@ def currency_join(request):
     if request.user.is_authenticated:
         user = request.user
         invite_code = request.data['invite_code']
-        try: 
+        try:
             currency = Currency.objects.get(invite_code=invite_code)
         except Currency.DoesNotExist:
             return Response({'message': 'Invalid invite code'}, status=status.HTTP_404_NOT_FOUND)
@@ -124,6 +130,7 @@ def currency_join(request):
         }, status=status.HTTP_200_OK)
     else:
         return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 @api_view(['POST'])
 def currency_leave(request):
