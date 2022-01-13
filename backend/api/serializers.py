@@ -2,7 +2,6 @@ from .models import *
 from rest_framework.serializers import ModelSerializer
 
 
-
 class UserSerializers(ModelSerializer):
     class Meta:
         model = User
@@ -18,15 +17,19 @@ class UserSerializers(ModelSerializer):
         user.save()
         return user
 
+
 class CurrencySerializers(ModelSerializer):
     class Meta:
         model = Currency
-        fields = ('id', 'name', 'symbol', 'admin', 'created_at', 'updated_at', 'invite_code')
+        fields = ('id', 'name', 'symbol', 'admin',
+                  'created_at', 'updated_at', 'invite_code')
+
 
 class WalletSerializers(ModelSerializer):
     class Meta:
         model = Wallet
         fields = ('id', 'currency', 'user', 'balance')
+
 
 class TransactionSerializers(ModelSerializer):
     class Meta:

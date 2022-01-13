@@ -167,17 +167,17 @@ class CurrencyModelTestCase(TestCase):
         """Define the test client and other test variables."""
         self.currency_name = "Bitcoin"
         self.currency_symbol = "BTC"
-        
+
         username = "testuser"
         email = "test@example.com"
         password = "testpass"
         self.user = User.objects.create_user(
             username, email, password)
 
-        self.currency = Currency(name=self.currency_name, symbol=self.currency_symbol, admin=self.user)
+        self.currency = Currency(
+            name=self.currency_name, symbol=self.currency_symbol, admin=self.user)
 
         self.signer = Signer()
-
 
     def test_model_can_create_a_currency(self):
         """Test the currency model can create a currency."""
@@ -193,7 +193,7 @@ class CurrencyModelTestCase(TestCase):
     def test_model_can_create_a_currency_with_symbol(self):
         """Test the currency model can create a currency with a symbol."""
         self.assertEqual(self.currency.symbol, self.currency_symbol)
-    
+
     def test_model_can_create_a_currency_with_admin(self):
         """Test the currency model can create a currency with an admin."""
         self.assertEqual(self.currency.admin, self.user)
@@ -201,7 +201,8 @@ class CurrencyModelTestCase(TestCase):
     def test_model_can_create_a_currency_with_invite_code(self):
         """Test the currency model can create a currency with an invite code."""
         self.currency.save()
-        self.assertEqual(self.currency.invite_code, self.signer.sign(f"{self.currency.id}-{self.currency.name}-{self.currency.symbol}"))
+        self.assertEqual(self.currency.invite_code, self.signer.sign(
+            f"{self.currency.id}-{self.currency.name}-{self.currency.symbol}"))
         self.assertTrue(self.currency.validate_invite)
 
     def test_model_can_create_a_currency_with_market_cap(self):
@@ -210,14 +211,15 @@ class CurrencyModelTestCase(TestCase):
         # print(self.currency.market_cap)
         self.assertEqual(self.currency.market_cap, -1)
         self.assertTrue(self.currency.validate_cap())
-    
+
     def test_model_can_create_wallet_for_admin(self):
         """Test the currency model can create a wallet for the admin."""
         self.currency.save()
-        adminWallet = Wallet.objects.filter(user=self.user, currency=self.currency).first()
+        adminWallet = Wallet.objects.filter(
+            user=self.user, currency=self.currency).first()
         self.assertEqual(adminWallet.currency, self.currency)
         self.assertEqual(adminWallet.balance, 0)
-    
+
 
 class CurrencyAPITestCase(TestCase):
     """Test suite for the currency API."""
@@ -235,14 +237,14 @@ class CurrencyAPITestCase(TestCase):
         password2 = "testpass2"
         self.user2 = User.objects.create_user(
             username2, email2, password2)
-        
+
         self.currency_name = "Bitcoin"
         self.currency_symbol = "BTC"
-        self.currency = Currency(name=self.currency_name, symbol=self.currency_symbol, admin=self.user)
+        self.currency = Currency(
+            name=self.currency_name, symbol=self.currency_symbol, admin=self.user)
         self.currency.save()
 
         self.client = APIClient()
-
 
         self.auth_token = self.client.post(
             reverse('login'),
@@ -255,7 +257,7 @@ class CurrencyAPITestCase(TestCase):
             {'username': 'testuser2', 'password': 'testpass2'},
             format='json'
         )
-    
+
     def test_api_can_create_a_currency(self):
         """Test the api has currency creation capability."""
         url = reverse('currency')
@@ -263,13 +265,14 @@ class CurrencyAPITestCase(TestCase):
             'name': "Ethereum",
             'symbol': "ETH"
         }
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['name'], "Ethereum")
         self.assertEqual(response.data['symbol'], "ETH")
         self.assertEqual(response.data['admin'], self.user.id)
-    
+
     def test_api_try_create_a_currency_without_login(self):
         """Test the api has currency creation capability."""
         url = reverse('currency')
@@ -279,14 +282,15 @@ class CurrencyAPITestCase(TestCase):
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-    
+
     def test_join_currency_api(self):
         """Test the api has currency creation capability."""
         url = reverse('currency_join')
         data = {
             'invite_code': self.currency.invite_code
         }
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token2.data['access'])
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token2.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['currency']['id'], self.currency.id)
@@ -300,14 +304,15 @@ class CurrencyAPITestCase(TestCase):
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-    
+
     def test_join_currency_api_with_invalid_invite_code(self):
         """Test the api has currency creation capability."""
         url = reverse('currency_join')
         data = {
             'invite_code': "invalid_code"
         }
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token2.data['access'])
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token2.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
 
@@ -317,13 +322,15 @@ class CurrencyAPITestCase(TestCase):
         data = {
             'invite_code': self.currency.invite_code
         }
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         url = reverse('currency_leave')
 
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         data = {
             'wallet': response.data['wallet']['id']
         }
@@ -335,13 +342,15 @@ class CurrencyAPITestCase(TestCase):
         data = {
             'invite_code': self.currency.invite_code
         }
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         url = reverse('currency_leave')
 
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         data = {
             'wallet': 10
         }
@@ -354,13 +363,15 @@ class CurrencyAPITestCase(TestCase):
         data = {
             'invite_code': self.currency.invite_code
         }
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         url = reverse('currency_leave')
 
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         wallet = Wallet(user=self.user2, currency=self.currency)
         wallet.save()
         data = {
@@ -369,21 +380,23 @@ class CurrencyAPITestCase(TestCase):
 
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
-    
+
     def test_leave_currency_api_with_balance_in_wallet(self):
         """Test the api has currency creation capability."""
         url = reverse('currency_join')
         data = {
             'invite_code': self.currency.invite_code
         }
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         url = reverse('currency_leave')
 
-        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
-        wallet = Wallet.objects.get(id= response.data['wallet']['id'])
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        wallet = Wallet.objects.get(id=response.data['wallet']['id'])
         wallet.balance = 1
         wallet.save()
         data = {

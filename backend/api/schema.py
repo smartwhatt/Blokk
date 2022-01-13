@@ -18,7 +18,8 @@ class UserType(DjangoObjectType):
 class WalletType(DjangoObjectType):
     class Meta:
         model = Wallet
-        fields = ('id', 'user', 'currency', 'balance', 'created_at', 'updated_at', 'publickey')
+        fields = ('id', 'user', 'currency', 'balance',
+                  'created_at', 'updated_at', 'publickey')
 
 
 class TransactionType(DjangoObjectType):
@@ -30,6 +31,7 @@ class CurrencyType(DjangoObjectType):
     class Meta:
         model = Currency
 
+
 class UpdateCurrencies(graphene.Mutation):
     class Arguments:
         id = graphene.Int(required=True)
@@ -37,12 +39,12 @@ class UpdateCurrencies(graphene.Mutation):
         symbol = graphene.String()
         admin = graphene.Int()
         market_cap = graphene.Int()
-    
+
     currency = graphene.Field(CurrencyType)
 
     def mutate(self, info, id, name=None, symbol=None, admin=None, market_cap=None):
         currency = Currency.objects.get(id=id)
-        if info.context.user.is_authenticated and(info.context.user.is_superuser or currency.admin == info.context.user):
+        if info.context.user.is_authenticated and (info.context.user.is_superuser or currency.admin == info.context.user):
             if name:
                 currency.name = name
             if symbol:
@@ -55,7 +57,8 @@ class UpdateCurrencies(graphene.Mutation):
             return UpdateCurrencies(currency=currency)
         else:
             raise Exception('Not authorized')
-    
+
+
 class DeleteCurrencies(graphene.Mutation):
     class Arguments:
         id = graphene.Int(required=True)
@@ -65,12 +68,12 @@ class DeleteCurrencies(graphene.Mutation):
     def mutate(self, info, id):
         currency = Currency.objects.get(id=id)
         # print(info.context.user)
-        if info.context.user.is_authenticated and(info.context.user.is_superuser or currency.admin == info.context.user):
+        if info.context.user.is_authenticated and (info.context.user.is_superuser or currency.admin == info.context.user):
             currency.delete()
             return DeleteCurrencies(ok=True)
         return DeleteCurrencies(ok=False)
 
-    
+
 class Query(graphene.ObjectType):
     all_users = graphene.List(UserType, description="List of all users")
     user_by_id = graphene.Field(
@@ -227,6 +230,7 @@ class Query(graphene.ObjectType):
         if admin is not None:
             return Currency.objects.filter(admin=admin)
         return None
+
 
 class Mutation(graphene.ObjectType):
     update_currency = UpdateCurrencies.Field()
