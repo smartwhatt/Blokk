@@ -111,6 +111,9 @@ def currency_join(request):
         user = request.user
         invite_code = request.data['invite_code']
         currency = Currency.objects.get(invite_code=invite_code)
+        if currency is None:
+            return Response({'message': 'Invalid invite code'}, status=status.HTTP_404_NOT_FOUND)
+
         wallet = Wallet(user=user, currency=currency, balance=0)
         wallet.save()
         walletSerializer = WalletSerializers(wallet)

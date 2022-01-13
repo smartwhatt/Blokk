@@ -292,4 +292,14 @@ class CurrencyAPITestCase(TestCase):
         self.assertEqual(response.data['currency']['id'], self.currency.id)
         self.assertEqual(response.data['wallet']['user'], self.user2.id)
 
+    def test_join_currency_api_without_login(self):
+        """Test the api has currency creation capability."""
+        url = reverse('currency_join')
+        data = {
+            'invite_code': self.currency.invite_code
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+    
 
