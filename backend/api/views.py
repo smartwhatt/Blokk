@@ -122,3 +122,13 @@ def currency_join(request):
 
     else:
         return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(['POST'])
+def currency_leave(request):
+    if request.user.is_authenticated:
+        user = request.user
+        wallet = Wallet.objects.get(user=user)
+        wallet.delete()
+        return Response({'message': 'Left currency'}, status=status.HTTP_200_OK)
+    else:
+        return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
