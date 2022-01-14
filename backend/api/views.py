@@ -101,6 +101,14 @@ def currency(request):
         if request.data.get('market_cap'):
             market_cap = request.data['market_cap']
             currency.market_cap = market_cap
+        
+        if currency.market_cap == -1:
+            if request.data.get('initial_balance'):
+                initial_balance = request.data['initial_balance']
+                currency.initial_balance = initial_balance
+            else:
+                return Response({'message': 'Initial balance is required for currency without market cap'}, status=status.HTTP_400_BAD_REQUEST)
+        
 
         currency.save()
         serializer = CurrencySerializers(currency)
@@ -159,7 +167,7 @@ def wallet_create(request):
             currency = Currency.objects.get(id=currencyid)
         except Currency.DoesNotExist:
             return Response({'message': 'Invalid currency id'}, status=status.HTTP_404_NOT_FOUND)
-        wallet = Wallet(user=user, currency=currency, balance=0)
+        wallet = Wallet(user=user, currency=currency, balance=currency.initial_balance)
         wallet.save()
         walletSerializer = WalletSerializers(wallet)
         currencySerializer = CurrencySerializers(currency)
