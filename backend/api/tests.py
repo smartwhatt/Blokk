@@ -273,6 +273,23 @@ class CurrencyAPITestCase(TestCase):
         self.assertEqual(response.data['symbol'], "ETH")
         self.assertEqual(response.data['admin'], self.user.id)
 
+    def test_api_can_create_a_currency_with_market_cap(self):
+        """Test the api has currency creation capability."""
+        url = reverse('currency')
+        data = {
+            'name': "Ethereum",
+            'symbol': "ETH",
+            'market_cap': 100
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], "Ethereum")
+        self.assertEqual(response.data['symbol'], "ETH")
+        self.assertEqual(response.data['admin'], self.user.id)
+        self.assertEqual(response.data['market_cap'], 100)
+
     def test_api_try_create_a_currency_without_login(self):
         """Test the api has currency creation capability."""
         url = reverse('currency')
