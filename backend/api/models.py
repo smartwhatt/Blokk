@@ -56,6 +56,7 @@ class Currency(models.Model):
     market_cap = models.IntegerField(default=-1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    initial_balance = models.IntegerField(default=0)
     # ledger = models.ForeignKey('Ledger', on_delete=models.CASCADE, related_name='currencies', blank=True, null=True)
 
     def __str__(self):
@@ -71,6 +72,17 @@ class Currency(models.Model):
         super().save(*args, **kwargs)
         if self.invite_code == None:
             self.generateInvite()
+        
+        if self.market_cap == None:
+            self.market_cap = -1
+        
+        if self.market_cap != -1:
+            if self.initial_balance != 0:
+                self.initial_balance = 0
+        
+        if self.initial_balance == None:
+            if self.market_cap != -1:
+                self.initial_balance = 0
         
         if self.admin.wallets.filter(currency=self).count() == 0:
             wallet = Wallet(user=self.admin, currency=self, balance=0)

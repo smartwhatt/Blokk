@@ -98,9 +98,18 @@ def currency(request):
                             symbol=currency_symbol, admin=user)
         currency.save()
 
-        if request.data.get('market_cap'):
+        if request.data.get('market_cap') is not None:
             market_cap = request.data['market_cap']
             currency.market_cap = market_cap
+            currency.save()
+
+        if request.data.get('market_cap') is None or request.data.get('market_cap') == -1:
+            if request.data.get('initial_balance') is not None:
+                initial_balance = request.data['initial_balance']
+                currency.initial_balance = initial_balance
+                currency.save()
+            else:
+                return Response({'message': 'Initial balance is required for currency without market cap'}, status=status.HTTP_400_BAD_REQUEST)
 
         currency.save()
         serializer = CurrencySerializers(currency)
@@ -120,7 +129,8 @@ def currency_join(request):
             currency = Currency.objects.get(invite_code=invite_code)
         except Currency.DoesNotExist:
             return Response({'message': 'Invalid invite code'}, status=status.HTTP_404_NOT_FOUND)
-        wallet = Wallet(user=user, currency=currency, balance=0)
+        wallet = Wallet(user=user, currency=currency,
+                        balance=currency.initial_balance)
         wallet.save()
         walletSerializer = WalletSerializers(wallet)
         currencySerializer = CurrencySerializers(currency)
@@ -150,6 +160,7 @@ def currency_leave(request):
     else:
         return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
 @api_view(['POST'])
 def wallet_create(request):
     if request.user.is_authenticated:
@@ -159,7 +170,8 @@ def wallet_create(request):
             currency = Currency.objects.get(id=currencyid)
         except Currency.DoesNotExist:
             return Response({'message': 'Invalid currency id'}, status=status.HTTP_404_NOT_FOUND)
-        wallet = Wallet(user=user, currency=currency, balance=0)
+        wallet = Wallet(user=user, currency=currency,
+                        balance=currency.initial_balance)
         wallet.save()
         walletSerializer = WalletSerializers(wallet)
         currencySerializer = CurrencySerializers(currency)

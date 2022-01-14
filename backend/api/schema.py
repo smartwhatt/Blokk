@@ -42,7 +42,7 @@ class UpdateCurrencies(graphene.Mutation):
 
     currency = graphene.Field(CurrencyType)
 
-    def mutate(self, info, id, name=None, symbol=None, admin=None, market_cap=None):
+    def mutate(self, info, id, name=None, symbol=None, admin=None, market_cap=None, initial_balance=None):
         currency = Currency.objects.get(id=id)
         if info.context.user.is_authenticated and (info.context.user.is_superuser or currency.admin == info.context.user):
             if name:
@@ -53,6 +53,8 @@ class UpdateCurrencies(graphene.Mutation):
                 currency.admin = User.objects.get(id=admin)
             if market_cap:
                 currency.market_cap = market_cap
+            if initial_balance:
+                currency.initial_balance = initial_balance
             currency.save()
             return UpdateCurrencies(currency=currency)
         else:
