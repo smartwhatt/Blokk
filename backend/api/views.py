@@ -98,14 +98,17 @@ def currency(request):
                             symbol=currency_symbol, admin=user)
         currency.save()
 
-        if request.data.get('market_cap'):
+        if request.data.get('market_cap') is not None:
             market_cap = request.data['market_cap']
             currency.market_cap = market_cap
-        
-        if currency.market_cap == -1:
+            currency.save()
+
+
+        if request.data.get('market_cap') == -1:
             if request.data.get('initial_balance'):
                 initial_balance = request.data['initial_balance']
                 currency.initial_balance = initial_balance
+                currency.save()
             else:
                 return Response({'message': 'Initial balance is required for currency without market cap'}, status=status.HTTP_400_BAD_REQUEST)
         
