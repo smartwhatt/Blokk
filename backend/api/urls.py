@@ -17,4 +17,6 @@ urlpatterns = [
     path("currency", views.currency, name="currency"),
     path("currency/join", views.currency_join, name="currency_join"),
     path("currency/leave", views.currency_leave, name="currency_leave"),
+
+    path("wallet/create", views.wallet_create, name="wallet_create"),
 ]
