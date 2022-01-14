@@ -76,6 +76,10 @@ class Currency(models.Model):
         if self.market_cap == None:
             self.market_cap = -1
         
+        if self.market_cap != -1:
+            if self.initial_balance != 0:
+                self.initial_balance = 0
+        
         if self.initial_balance == None:
             if self.market_cap != -1:
                 self.initial_balance = 0
