@@ -104,7 +104,7 @@ def currency(request):
             currency.save()
 
 
-        if request.data.get('market_cap') == -1:
+        if request.data.get('market_cap') is None or request.data.get('market_cap') == -1:
             if request.data.get('initial_balance'):
                 initial_balance = request.data['initial_balance']
                 currency.initial_balance = initial_balance
