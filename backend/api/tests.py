@@ -445,6 +445,65 @@ class CurrencyAPITestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
+class WalletModelTestCase(TestCase):
+    """Test suite for the wallet model."""
+
+    def setUp(self):
+        """Define the test client and other test variables."""
+        self.currency_name = "Bitcoin"
+        self.currency_symbol = "BTC"
+
+        username = "testuser"
+        email = "test@example.com"
+        password = "testpass"
+        self.user = User.objects.create_user(
+            username, email, password)
+
+        self.currency = Currency(
+            name=self.currency_name, symbol=self.currency_symbol, admin=self.user)
+        self.currency.save()
+
+        self.wallet = Wallet(
+            user=self.user, currency=self.currency, balance=0)
+
+    def test_model_can_create_a_wallet(self):
+        """Test the wallet model can create a wallet."""
+        old_count = Wallet.objects.count()
+        self.wallet.save()
+        new_count = Wallet.objects.count()
+        self.assertNotEqual(old_count, new_count)
+
+    def test_model_can_create_a_wallet_with_user(self):
+        """Test the wallet model can create a wallet with a user."""
+        self.wallet.save()
+        self.assertEqual(self.wallet.user, self.user)
+
+    def test_model_can_create_a_wallet_with_currency(self):
+        """Test the wallet model can create a wallet with a currency."""
+        self.wallet.save()
+        self.assertEqual(self.wallet.currency, self.currency)
+
+    def test_model_can_create_a_wallet_with_balance(self):
+        """Test the wallet model can create a wallet with a balance."""
+        self.wallet.save()
+        self.assertEqual(self.wallet.balance, 0)
+
+    def test_model_can_create_a_wallet_with_publickey(self):
+        """Test the wallet model can create a wallet with a publickey."""
+        self.wallet.save()
+        self.assertIsNotNone(self.wallet.publickey)
+
+    def test_model_can_create_a_wallet_with_privatekey(self):
+        """Test the wallet model can create a wallet with a privatekey."""
+        self.wallet.save()
+        self.assertIsNotNone(self.wallet.privatekey)
+    
+    def test_model_can_create_a_valid_wallet(self):
+        """Test the wallet model can create a wallet with a address."""
+        self.wallet.save()
+        self.assertTrue(self.wallet.validate_amount())
+
+
 class WalletAPITestCase(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -465,7 +524,7 @@ class WalletAPITestCase(TestCase):
             admin=self.user
         )
         self.currency.save()
-    
+
     def test_create_wallet_api(self):
         """Test the api has wallet creation capability."""
         url = reverse('wallet_create')
@@ -478,7 +537,7 @@ class WalletAPITestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['currency']['id'], self.currency.id)
         self.assertEqual(response.data['wallet']['user'], self.user.id)
-    
+
     def test_create_wallet_api_with_invalid_currency(self):
         """Test the api has wallet creation capability."""
         url = reverse('wallet_create')
@@ -489,7 +548,7 @@ class WalletAPITestCase(TestCase):
             HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
-    
+
     def test_create_wallet_api_without_login(self):
         """Test the api has wallet creation capability."""
         url = reverse('wallet_create')
