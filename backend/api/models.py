@@ -6,7 +6,6 @@ from Crypto.Hash import SHA256
 import binascii
 
 
-
 # Django import
 from django.db import models
 from django.contrib.auth.models import AbstractUser
@@ -27,8 +26,6 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
-
-    
 
     def create_user(self, username, email, password):
         self.username = username
@@ -56,6 +53,7 @@ class Currency(models.Model):
     market_cap = models.IntegerField(default=-1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    initial_balance = models.IntegerField(default=0)
     # ledger = models.ForeignKey('Ledger', on_delete=models.CASCADE, related_name='currencies', blank=True, null=True)
 
     def __str__(self):
@@ -71,12 +69,23 @@ class Currency(models.Model):
         super().save(*args, **kwargs)
         if self.invite_code == None:
             self.generateInvite()
-        
+
+        if self.market_cap == None:
+            self.market_cap = -1
+
+        if self.market_cap != -1:
+            if self.initial_balance != 0:
+                self.initial_balance = 0
+
+        if self.initial_balance == None:
+            if self.market_cap != -1:
+                self.initial_balance = 0
+
         if self.admin.wallets.filter(currency=self).count() == 0:
             wallet = Wallet(user=self.admin, currency=self, balance=0)
             wallet.save()
             self.admin.wallets.add(wallet)
-        
+
         super().save(*args, **kwargs)
 
     def get_users(self):
@@ -90,7 +99,7 @@ class Currency(models.Model):
         total = self.wallets.all().aggregate(
             models.Sum('balance'))['balance__sum']
         return self.market_cap == -1 or total == None or total <= self.market_cap
-    
+
     def get_admin_wallet(self):
         return self.admin.wallets.filter(currency=self).first()
 
@@ -122,9 +131,9 @@ class Wallet(models.Model):
 
     def validate_amount(self):
         amount_earn = self.received.all().aggregate(
-            models.Sum('amount'))['amount__sum']
+            models.Sum('amount'))['amount__sum'] if self.received.all().aggregate(models.Sum('amount'))['amount__sum'] != None else 0
         amount_spend = self.sent.all().aggregate(
-            models.Sum('amount'))['amount__sum']
+            models.Sum('amount'))['amount__sum'] if self.sent.all().aggregate(models.Sum('amount'))['amount__sum'] != None else 0
         return amount_earn - amount_spend == self.balance
 
     def generateKey(self):
@@ -133,29 +142,30 @@ class Wallet(models.Model):
         self.privatekey = keyPair.export_key().decode('ascii')
         self.save()
         return keyPair
-    
+
     def save(self, *args, **kwargs):
         if not self.publickey or not self.privatekey:
             self.generateKey()
         super().save(*args, **kwargs)
-    
+
     # def create(self, user, currency):
     #     self.user = user
     #     self.currency = currency
     #     self.save()
     #     return self
-    
+
     def get_publickey(self):
         return self.publickey
 
     def get_privatekey(self):
         return self.privatekey
-    
+
     def sign(self, message):
         hash = SHA256.new(message.encode('utf-8'))
         signer = PKCS115_SigScheme(RSA.import_key(self.privatekey))
         signature = signer.sign(hash)
         return binascii.hexlify(signature).decode('ascii')
+
 
 class Transaction(models.Model):
     sender = models.ForeignKey(
@@ -167,8 +177,8 @@ class Transaction(models.Model):
         Currency, on_delete=models.CASCADE, related_name='transactions')
     created_at = models.DateTimeField(auto_now_add=True)
     sender_signature = models.TextField(max_length=5000, blank=True, null=True)
-    receiver_signature = models.TextField(max_length=5000, blank=True, null=True)
-
+    receiver_signature = models.TextField(
+        max_length=5000, blank=True, null=True)
 
     before_sender_amount_snapshot = models.IntegerField(default=0)
     before_receiver_amount_snapshot = models.IntegerField(default=0)
@@ -178,10 +188,10 @@ class Transaction(models.Model):
     def __str__(self):
         return f'{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}'
 
-    
     def validate_signature(self):
         verifier = PKCS115_SigScheme(RSA.import_key(self.receiver.publickey))
-        hash = SHA256.new(f"{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}".encode('utf-8'))
+        hash = SHA256.new(
+            f"{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}".encode('utf-8'))
         return verifier.verify(hash, binascii.unhexlify(self.sender_signature))
 
     def create(self, sender, receiver, amount, currency):
@@ -196,13 +206,15 @@ class Transaction(models.Model):
             return None
         else:
             return None
-    
-    def save(self,*args, **kwargs):
+
+    def save(self, *args, **kwargs):
         if self.sender.currency == self.currency and self.receiver.currency == self.currency:
             self.before_sender_amount_snapshot = self.sender.balance
             self.before_receiver_amount_snapshot = self.receiver.balance
-            self.sender_signature = self.sender.sign(f"{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}")
-            self.receiver_signature = self.receiver.sign(f"{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}")
+            self.sender_signature = self.sender.sign(
+                f"{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}")
+            self.receiver_signature = self.receiver.sign(
+                f"{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}")
             super().save(*args, **kwargs)
             if self.sender.balance >= self.amount:
                 self.sender.withdraw(self.amount)

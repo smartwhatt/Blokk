@@ -1,3 +1,4 @@
+import email
 from django.test import TestCase
 from rest_framework.test import APIClient
 from rest_framework import status
@@ -258,12 +259,13 @@ class CurrencyAPITestCase(TestCase):
             format='json'
         )
 
-    def test_api_can_create_a_currency(self):
+    def test_api_can_create_a_currency_with_market_cap(self):
         """Test the api has currency creation capability."""
         url = reverse('currency')
         data = {
             'name': "Ethereum",
-            'symbol': "ETH"
+            'symbol': "ETH",
+            'market_cap': 100
         }
         self.client.credentials(
             HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
@@ -272,6 +274,43 @@ class CurrencyAPITestCase(TestCase):
         self.assertEqual(response.data['name'], "Ethereum")
         self.assertEqual(response.data['symbol'], "ETH")
         self.assertEqual(response.data['admin'], self.user.id)
+        self.assertEqual(response.data['market_cap'], 100)
+
+    def test_api_can_create_a_currency_with_initial_balance(self):
+        """Test the api has currency creation capability."""
+        url = reverse('currency')
+        data = {
+            'name': "Ethereum",
+            'symbol': "ETH",
+            'initial_balance': 100
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], "Ethereum")
+        self.assertEqual(response.data['symbol'], "ETH")
+        self.assertEqual(response.data['admin'], self.user.id)
+        self.assertEqual(response.data['initial_balance'], 100)
+
+    def test_api_can_create_a_currency_with_initial_balance_and_market_cap(self):
+        """Test the api has currency creation capability."""
+        url = reverse('currency')
+        data = {
+            'name': "Ethereum",
+            'symbol': "ETH",
+            'initial_balance': 100,
+            'market_cap': 100
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['name'], "Ethereum")
+        self.assertEqual(response.data['symbol'], "ETH")
+        self.assertEqual(response.data['admin'], self.user.id)
+        self.assertEqual(response.data['initial_balance'], 0)
+        self.assertEqual(response.data['market_cap'], 100)
 
     def test_api_try_create_a_currency_without_login(self):
         """Test the api has currency creation capability."""
@@ -403,4 +442,227 @@ class CurrencyAPITestCase(TestCase):
             'wallet': response.data['wallet']['id']
         }
         response = self.client.post(url, data=data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class WalletModelTestCase(TestCase):
+    """Test suite for the wallet model."""
+
+    def setUp(self):
+        """Define the test client and other test variables."""
+        self.currency_name = "Bitcoin"
+        self.currency_symbol = "BTC"
+
+        username = "testuser"
+        email = "test@example.com"
+        password = "testpass"
+        self.user = User.objects.create_user(
+            username, email, password)
+
+        self.currency = Currency(
+            name=self.currency_name, symbol=self.currency_symbol, admin=self.user)
+        self.currency.save()
+
+        self.wallet = Wallet(
+            user=self.user, currency=self.currency, balance=0)
+
+    def test_model_can_create_a_wallet(self):
+        """Test the wallet model can create a wallet."""
+        old_count = Wallet.objects.count()
+        self.wallet.save()
+        new_count = Wallet.objects.count()
+        self.assertNotEqual(old_count, new_count)
+
+    def test_model_can_create_a_wallet_with_user(self):
+        """Test the wallet model can create a wallet with a user."""
+        self.wallet.save()
+        self.assertEqual(self.wallet.user, self.user)
+
+    def test_model_can_create_a_wallet_with_currency(self):
+        """Test the wallet model can create a wallet with a currency."""
+        self.wallet.save()
+        self.assertEqual(self.wallet.currency, self.currency)
+
+    def test_model_can_create_a_wallet_with_balance(self):
+        """Test the wallet model can create a wallet with a balance."""
+        self.wallet.save()
+        self.assertEqual(self.wallet.balance, 0)
+
+    def test_model_can_create_a_wallet_with_publickey(self):
+        """Test the wallet model can create a wallet with a publickey."""
+        self.wallet.save()
+        self.assertIsNotNone(self.wallet.publickey)
+
+    def test_model_can_create_a_wallet_with_privatekey(self):
+        """Test the wallet model can create a wallet with a privatekey."""
+        self.wallet.save()
+        self.assertIsNotNone(self.wallet.privatekey)
+
+    def test_model_can_create_a_valid_wallet(self):
+        """Test the wallet model can create a wallet with a address."""
+        self.wallet.save()
+        self.assertTrue(self.wallet.validate_amount())
+
+
+class WalletAPITestCase(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = User.objects.create_user(
+            username='testuser',
+            email='test@example.com',
+            password='testpassword'
+        )
+        self.auth_token = self.client.post(
+            reverse('login'),
+            {'username': 'testuser', 'password': 'testpassword'},
+            format='json'
+        )
+        self.currency = Currency(
+            name='test_currency',
+            symbol='TEST',
+            admin=self.user
+        )
+        self.currency.save()
+
+    def test_create_wallet_api(self):
+        """Test the api has wallet creation capability."""
+        url = reverse('wallet_create')
+        data = {
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['currency']['id'], self.currency.id)
+        self.assertEqual(response.data['wallet']['user'], self.user.id)
+
+    def test_create_wallet_api_with_invalid_currency(self):
+        """Test the api has wallet creation capability."""
+        url = reverse('wallet_create')
+        data = {
+            'currency': 10
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_create_wallet_api_without_login(self):
+        """Test the api has wallet creation capability."""
+        url = reverse('wallet_create')
+        data = {
+            'currency': self.currency.id
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_delete_wallet_api(self):
+        """Test the api has wallet deletion capability."""
+        url = reverse('wallet_create')
+        data = {
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('wallet_delete')
+        data = {
+            'wallet': response.data['wallet']['id']
+        }
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_wallet_api_without_login(self):
+        """Test the api has wallet deletion capability."""
+        url = reverse('wallet_create')
+        data = {
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('wallet_delete')
+        data = {
+            'wallet': response.data['wallet']['id']
+        }
+        self.client.credentials(HTTP_AUTHORIZATION='')
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_delete_wallet_api_with_invalid_wallet(self):
+        """Test the api has wallet deletion capability."""
+        url = reverse('wallet_create')
+        data = {
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('wallet_delete')
+        data = {
+            'wallet': 10
+        }
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_wallet_api_with_wrong_wallet(self):
+        """Test the api has wallet deletion capability."""
+        user2 = User.objects.create_user(
+            username='testuser2',
+            email="test2@example.com",
+            password='testpassword'
+        )
+        wallet = Wallet(
+            user=user2,
+            currency=self.currency
+        )
+        wallet.save()
+
+        url = reverse('wallet_delete')
+        data = {
+            'wallet': wallet.id
+        }
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_delete_wallet_api_with_balance(self):
+        """Test the api has wallet deletion capability."""
+        url = reverse('wallet_create')
+        data = {
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        wallet = Wallet.objects.get(id=response.data['wallet']['id'])
+        wallet.balance = 100
+        wallet.save()
+
+        url = reverse('wallet_delete')
+        data = {
+            'wallet': response.data['wallet']['id']
+        }
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

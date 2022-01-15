@@ -98,9 +98,18 @@ def currency(request):
                             symbol=currency_symbol, admin=user)
         currency.save()
 
-        if request.data.get('market_cap'):
+        if request.data.get('market_cap') is not None:
             market_cap = request.data['market_cap']
             currency.market_cap = market_cap
+            currency.save()
+
+        if request.data.get('market_cap') is None or request.data.get('market_cap') == -1:
+            if request.data.get('initial_balance') is not None:
+                initial_balance = request.data['initial_balance']
+                currency.initial_balance = initial_balance
+                currency.save()
+            else:
+                return Response({'message': 'Initial balance is required for currency without market cap'}, status=status.HTTP_400_BAD_REQUEST)
 
         currency.save()
         serializer = CurrencySerializers(currency)
@@ -120,7 +129,8 @@ def currency_join(request):
             currency = Currency.objects.get(invite_code=invite_code)
         except Currency.DoesNotExist:
             return Response({'message': 'Invalid invite code'}, status=status.HTTP_404_NOT_FOUND)
-        wallet = Wallet(user=user, currency=currency, balance=0)
+        wallet = Wallet(user=user, currency=currency,
+                        balance=currency.initial_balance)
         wallet.save()
         walletSerializer = WalletSerializers(wallet)
         currencySerializer = CurrencySerializers(currency)
@@ -135,7 +145,10 @@ def currency_join(request):
 @api_view(['POST'])
 def currency_leave(request):
     if request.user.is_authenticated:
-        walletid = request.data['wallet']
+        if request.data.get('wallet') is not None:
+            walletid = request.data['wallet']
+        else:
+            return Response({'message': 'Wallet is required'}, status=status.HTTP_400_BAD_REQUEST)
         try:
             wallet = Wallet.objects.get(id=walletid)
         except Wallet.DoesNotExist:
@@ -147,5 +160,27 @@ def currency_leave(request):
             wallet.delete()
             return Response({'message': 'Left currency'}, status=status.HTTP_200_OK)
         return Response({'message': 'You are not the owner of this wallet'}, status=status.HTTP_401_UNAUTHORIZED)
+    else:
+        return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+
+
+@api_view(['POST'])
+def wallet_create(request):
+    if request.user.is_authenticated:
+        user = request.user
+        currencyid = request.data['currency']
+        try:
+            currency = Currency.objects.get(id=currencyid)
+        except Currency.DoesNotExist:
+            return Response({'message': 'Invalid currency id'}, status=status.HTTP_404_NOT_FOUND)
+        wallet = Wallet(user=user, currency=currency,
+                        balance=currency.initial_balance)
+        wallet.save()
+        walletSerializer = WalletSerializers(wallet)
+        currencySerializer = CurrencySerializers(currency)
+        return Response({
+            'wallet': walletSerializer.data,
+            'currency': currencySerializer.data
+        }, status=status.HTTP_201_CREATED)
     else:
         return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
