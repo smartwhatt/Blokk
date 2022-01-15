@@ -145,7 +145,10 @@ def currency_join(request):
 @api_view(['POST'])
 def currency_leave(request):
     if request.user.is_authenticated:
-        walletid = request.data['wallet']
+        if request.data.get('wallet') is not None:
+            walletid = request.data['wallet']
+        else:
+            return Response({'message': 'Wallet is required'}, status=status.HTTP_400_BAD_REQUEST)
         try:
             wallet = Wallet.objects.get(id=walletid)
         except Wallet.DoesNotExist:
