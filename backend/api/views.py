@@ -178,6 +178,6 @@ def wallet_create(request):
         return Response({
             'wallet': walletSerializer.data,
             'currency': currencySerializer.data
-        }, status=status.HTTP_200_OK)
+        }, status=status.HTTP_201_CREATED)
     else:
         return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
