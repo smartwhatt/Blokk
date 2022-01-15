@@ -497,7 +497,7 @@ class WalletModelTestCase(TestCase):
         """Test the wallet model can create a wallet with a privatekey."""
         self.wallet.save()
         self.assertIsNotNone(self.wallet.privatekey)
-    
+
     def test_model_can_create_a_valid_wallet(self):
         """Test the wallet model can create a wallet with a address."""
         self.wallet.save()
@@ -578,3 +578,91 @@ class WalletAPITestCase(TestCase):
             HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_delete_wallet_api_without_login(self):
+        """Test the api has wallet deletion capability."""
+        url = reverse('wallet_create')
+        data = {
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('wallet_delete')
+        data = {
+            'wallet': response.data['wallet']['id']
+        }
+        self.client.credentials(HTTP_AUTHORIZATION='')
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_delete_wallet_api_with_invalid_wallet(self):
+        """Test the api has wallet deletion capability."""
+        url = reverse('wallet_create')
+        data = {
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        url = reverse('wallet_delete')
+        data = {
+            'wallet': 10
+        }
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_delete_wallet_api_with_wrong_wallet(self):
+        """Test the api has wallet deletion capability."""
+        user2 = User.objects.create_user(
+            username='testuser2',
+            email="test2@example.com",
+            password='testpassword'
+        )
+        wallet = Wallet(
+            user=user2,
+            currency=self.currency
+        )
+        wallet.save()
+
+        url = reverse('wallet_delete')
+        data = {
+            'wallet': wallet.id
+        }
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_delete_wallet_api_with_balance(self):
+        """Test the api has wallet deletion capability."""
+        url = reverse('wallet_create')
+        data = {
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        wallet = Wallet.objects.get(id=response.data['wallet']['id'])
+        wallet.balance = 100
+        wallet.save()
+
+        url = reverse('wallet_delete')
+        data = {
+            'wallet': response.data['wallet']['id']
+        }
+
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
