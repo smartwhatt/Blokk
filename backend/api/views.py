@@ -184,3 +184,27 @@ def wallet_create(request):
         }, status=status.HTTP_201_CREATED)
     else:
         return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
+
+@api_view(['POST'])
+def transaction_create(request):
+    if request.user.is_authenticated:
+        user = request.user
+        sender = request.data['sender']
+        receiver = request.data['receiver']
+        amount = request.data['amount']
+        try:
+            s_wallet = Wallet.objects.get(id=sender)
+            r_wallet = Wallet.objects.get(id=receiver)
+        except Wallet.DoesNotExist:
+            return Response({'message': 'Invalid wallet id'}, status=status.HTTP_404_NOT_FOUND)
+        if sender.user == user:
+            if amount > s_wallet.balance:
+                return Response({'message': 'Insufficient funds'}, status=status.HTTP_400_BAD_REQUEST)
+            transaction = Transaction(sender=s_wallet, receiver=r_wallet, amount=amount)
+            transaction.save()
+            transactionSerializer = TransactionSerializers(transaction)
+            return Response(transactionSerializer.data, status=status.HTTP_201_CREATED)
+
+        return Response({'message': 'You are not the owner of this wallet'}, status=status.HTTP_401_UNAUTHORIZED)
+    else:
+        return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
