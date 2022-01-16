@@ -692,7 +692,7 @@ class TransactionModelTestCase(TestCase):
         self.wallet = Wallet(
             user=self.user,
             currency=self.currency,
-            amount=1000
+            balance=1000
         )
         self.wallet.save()
         self.wallet2 = Wallet(
@@ -705,7 +705,7 @@ class TransactionModelTestCase(TestCase):
         self.transaction = Transaction(
             sender=self.wallet,
             receiver=self.wallet2,
-            balance=100,
+            amount=100,
             currency=self.currency
         )
     
