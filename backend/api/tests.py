@@ -753,3 +753,9 @@ class TransactionModelTestCase(TestCase):
         self.transaction.save()
         self.assertTrue(self.currency.validate_cap())
 
+    def test_currency_amount_is_valid_with_market_cap(self):
+        """Test the currency amount is valid with market cap."""
+        self.currency.market_cap = 10000
+        self.currency.save()
+        self.transaction.save()
+        self.assertTrue(self.currency.validate_cap())
