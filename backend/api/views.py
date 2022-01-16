@@ -204,7 +204,7 @@ def transaction_create(request):
         except Wallet.DoesNotExist:
             return Response({'message': 'Invalid reciever wallet id'}, status=status.HTTP_404_NOT_FOUND)
 
-        if sender.user == user:
+        if s_wallet.user == user:
             if amount > s_wallet.balance:
                 return Response({'message': 'Insufficient funds'}, status=status.HTTP_400_BAD_REQUEST)
             transaction = Transaction(
