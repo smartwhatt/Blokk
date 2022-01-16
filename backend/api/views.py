@@ -185,6 +185,7 @@ def wallet_create(request):
     else:
         return Response({'message': 'Invalid token'}, status=status.HTTP_401_UNAUTHORIZED)
 
+
 @api_view(['POST'])
 def transaction_create(request):
     if request.user.is_authenticated:
@@ -192,15 +193,22 @@ def transaction_create(request):
         sender = request.data['sender']
         receiver = request.data['receiver']
         amount = request.data['amount']
+        currency = request.data['currency']
         try:
             s_wallet = Wallet.objects.get(id=sender)
+        except Wallet.DoesNotExist:
+            return Response({'message': 'Invalid sender wallet id'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
             r_wallet = Wallet.objects.get(id=receiver)
         except Wallet.DoesNotExist:
-            return Response({'message': 'Invalid wallet id'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'message': 'Invalid reciever wallet id'}, status=status.HTTP_404_NOT_FOUND)
+
         if sender.user == user:
             if amount > s_wallet.balance:
                 return Response({'message': 'Insufficient funds'}, status=status.HTTP_400_BAD_REQUEST)
-            transaction = Transaction(sender=s_wallet, receiver=r_wallet, amount=amount)
+            transaction = Transaction(
+                sender=s_wallet, receiver=r_wallet, amount=amount, currency=currency)
             transaction.save()
             transactionSerializer = TransactionSerializers(transaction)
             return Response(transactionSerializer.data, status=status.HTTP_201_CREATED)

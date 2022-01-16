@@ -667,6 +667,7 @@ class WalletAPITestCase(TestCase):
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
+
 class TransactionModelTestCase(TestCase):
     """Test the transaction model."""
 
@@ -708,19 +709,19 @@ class TransactionModelTestCase(TestCase):
             amount=100,
             currency=self.currency
         )
-    
+
     def test_transaction_can_be_created(self):
         """Test the transaction model can be created."""
         old_count = Transaction.objects.count()
         self.transaction.save()
         new_count = Transaction.objects.count()
         self.assertNotEqual(old_count, new_count)
-    
+
     def test_transaction_can_be_created_with_sender(self):
         """Test the transaction model can be created with sender."""
         self.transaction.save()
         self.assertEqual(self.transaction.sender, self.wallet)
-    
+
     def test_transaction_can_be_created_with_receiver(self):
         """Test the transaction model can be created with receiver."""
         self.transaction.save()
@@ -730,12 +731,12 @@ class TransactionModelTestCase(TestCase):
         """Test the transaction model can be created with amount."""
         self.transaction.save()
         self.assertEqual(self.transaction.amount, 100)
-    
+
     def test_transaction_can_be_created_with_currency(self):
         """Test the transaction model can be created with currency."""
         self.transaction.save()
         self.assertEqual(self.transaction.currency, self.currency)
-    
+
     def test_transaction_sender_balance_got_deducted(self):
         """Test the transaction sender balance got deducted."""
         self.transaction.save()
@@ -747,7 +748,7 @@ class TransactionModelTestCase(TestCase):
         self.transaction.save()
         wallet = Wallet.objects.get(id=self.wallet2.id)
         self.assertEqual(wallet.balance, 1100)
-    
+
     def test_currency_amount_is_valid(self):
         """Test the currency amount is valid."""
         self.transaction.save()
@@ -759,3 +760,68 @@ class TransactionModelTestCase(TestCase):
         self.currency.save()
         self.transaction.save()
         self.assertTrue(self.currency.validate_cap())
+
+class TransactionAPITestCase(TestCase):
+    """Test the transaction api."""
+
+    def setUp(self):
+        """Define the test client and other test variables."""
+        self.user = User.objects.create_user(
+            username='testuser',
+            email="test@example.com",
+            password='testpassword'
+        )
+        self.user2 = User.objects.create_user(
+            username='testuser2',
+            email="test2@example.com",
+            password='testpassword'
+        )
+
+        self.currency = Currency(
+            name='Bitcoin',
+            symbol='BTC',
+            admin=self.user
+        )
+        self.currency.save()
+
+        self.wallet = Wallet(
+            user=self.user,
+            currency=self.currency,
+            balance=1000
+        )
+        self.wallet.save()
+
+        self.wallet2 = Wallet(
+            user=self.user2,
+            currency=self.currency,
+            balance=1000
+        )
+        self.wallet2.save()
+
+    def test_create_transaction_api_with_valid_data(self):
+        """Test the api has transaction creation capability."""
+        url = reverse('transaction_create')
+        data = {
+            'sender': self.wallet.id,
+            'receiver': self.wallet2.id,
+            'amount': 100,
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_create_transaction_api_with_invalid_sender_wallet(self):
+        """Test the api has transaction creation capability."""
+        url = reverse('transaction_create')
+        data = {
+            'sender': 10,
+            'receiver': self.wallet2.id,
+            'amount': 100,
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
