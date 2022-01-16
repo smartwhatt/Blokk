@@ -845,3 +845,17 @@ class TransactionAPITestCase(TestCase):
             HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    
+    def test_create_transaction_api_with_invalid_receiver_wallet(self):
+        """Test the api has transaction creation capability."""
+        url = reverse('transaction_create')
+        data = {
+            'sender': self.wallet.id,
+            'receiver': 10,
+            'amount': 100,
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
