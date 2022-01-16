@@ -82,7 +82,7 @@ class Currency(models.Model):
                 self.initial_balance = 0
 
         if self.admin.wallets.filter(currency=self).count() == 0:
-            wallet = Wallet(user=self.admin, currency=self, balance=0)
+            wallet = Wallet(user=self.admin, currency=self, balance=self.initial_balance if self.market_cap == -1 else self.market_cap)
             wallet.save()
             self.admin.wallets.add(wallet)
 
