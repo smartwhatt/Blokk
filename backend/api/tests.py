@@ -666,3 +666,45 @@ class WalletAPITestCase(TestCase):
             HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+class TransactionModelTestCase(TestCase):
+    """Test the transaction model."""
+
+    def setUp(self):
+        """Define the test client and other test variables."""
+        self.user = User.objects.create_user(
+            username='testuser',
+            email="test@example.com",
+            password='testpassword'
+        )
+        self.user2 = User.objects.create_user(
+            username='testuser2',
+            email="test2@example.com",
+            password='testpassword'
+        )
+        self.currency = Currency(
+            name='Bitcoin',
+            symbol='BTC',
+        )
+
+        self.currency.save()
+        self.wallet = Wallet(
+            user=self.user,
+            currency=self.currency,
+            amount=1000
+        )
+        self.wallet.save()
+        self.wallet2 = Wallet(
+            user=self.user2,
+            currency=self.currency,
+            amount=1000
+        )
+        self.wallet2.save()
+        self.transaction = Transaction(
+            sender=self.wallet,
+            receiver=self.wallet2,
+            amount=100,
+            currency=self.currency
+        )
+
+
