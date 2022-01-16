@@ -859,3 +859,73 @@ class TransactionAPITestCase(TestCase):
             HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    
+    def  test_create_transaction_api_with_invalid_currency(self):
+        """Test the api has transaction creation capability."""
+        url = reverse('transaction_create')
+        data = {
+            'sender': self.wallet.id,
+            'receiver': self.wallet2.id,
+            'amount': 100,
+            'currency': 10
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+    
+    def test_create_transaction_api_with_invalid_amount(self):
+        """Test the api has transaction creation capability."""
+        url = reverse('transaction_create')
+        data = {
+            'sender': self.wallet.id,
+            'receiver': self.wallet2.id,
+            'amount': -100,
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_create_transaction_api_with_insufficient_funds(self):
+        """Test the api has transaction creation capability."""
+        url = reverse('transaction_create')
+        data = {
+            'sender': self.wallet.id,
+            'receiver': self.wallet2.id,
+            'amount': 1100,
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+    
+    def test_create_transaction_api_with_someone_else_wallet(self):
+        """Test the api has transaction creation capability."""
+        url = reverse('transaction_create')
+        data = {
+            'sender': self.wallet2.id,
+            'receiver': self.wallet.id,
+            'amount': 100,
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+    
+    def test_create_transaction_api_with_same_wallet(self):
+        """Test the api has transaction creation capability."""
+        url = reverse('transaction_create')
+        data = {
+            'sender': self.wallet.id,
+            'receiver': self.wallet.id,
+            'amount': 100,
+            'currency': self.currency.id
+        }
+        self.client.credentials(
+            HTTP_AUTHORIZATION='Bearer ' + self.auth_token.data['access'])
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
