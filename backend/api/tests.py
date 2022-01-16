@@ -685,9 +685,10 @@ class TransactionModelTestCase(TestCase):
         self.currency = Currency(
             name='Bitcoin',
             symbol='BTC',
+            admin=self.user
         )
-
         self.currency.save()
+
         self.wallet = Wallet(
             user=self.user,
             currency=self.currency,
@@ -697,14 +698,58 @@ class TransactionModelTestCase(TestCase):
         self.wallet2 = Wallet(
             user=self.user2,
             currency=self.currency,
-            amount=1000
+            balance=1000
         )
         self.wallet2.save()
+
         self.transaction = Transaction(
             sender=self.wallet,
             receiver=self.wallet2,
-            amount=100,
+            balance=100,
             currency=self.currency
         )
+    
+    def test_transaction_can_be_created(self):
+        """Test the transaction model can be created."""
+        old_count = Transaction.objects.count()
+        self.transaction.save()
+        new_count = Transaction.objects.count()
+        self.assertNotEqual(old_count, new_count)
+    
+    def test_transaction_can_be_created_with_sender(self):
+        """Test the transaction model can be created with sender."""
+        self.transaction.save()
+        self.assertEqual(self.transaction.sender, self.wallet)
+    
+    def test_transaction_can_be_created_with_receiver(self):
+        """Test the transaction model can be created with receiver."""
+        self.transaction.save()
+        self.assertEqual(self.transaction.receiver, self.wallet2)
 
+    def test_transaction_can_be_created_with_amount(self):
+        """Test the transaction model can be created with amount."""
+        self.transaction.save()
+        self.assertEqual(self.transaction.amount, 100)
+    
+    def test_transaction_can_be_created_with_currency(self):
+        """Test the transaction model can be created with currency."""
+        self.transaction.save()
+        self.assertEqual(self.transaction.currency, self.currency)
+    
+    def test_transaction_sender_balance_got_deducted(self):
+        """Test the transaction sender balance got deducted."""
+        self.transaction.save()
+        wallet = Wallet.objects.get(id=self.wallet.id)
+        self.assertEqual(wallet.balance, 900)
+
+    def test_transaction_receiver_balance_got_added(self):
+        """Test the transaction receiver balance got added."""
+        self.transaction.save()
+        wallet = Wallet.objects.get(id=self.wallet2.id)
+        self.assertEqual(wallet.balance, 1100)
+    
+    def test_currency_amount_is_valid(self):
+        """Test the currency amount is valid."""
+        self.transaction.save()
+        self.assertTrue(self.currency.validate_cap())
 
