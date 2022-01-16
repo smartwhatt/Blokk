@@ -825,8 +825,11 @@ class TransactionAPITestCase(TestCase):
         self.assertEqual(response.data['amount'], 100)
         self.assertEqual(response.data['currency'], self.currency.id)
 
-        self.assertEqual(self.wallet.balance, 900)
-        self.assertEqual(self.wallet2.balance, 1100)
+        wallet = Wallet.objects.get(id=self.wallet.id)
+        wallet2 = Wallet.objects.get(id=self.wallet2.id)
+
+        self.assertEqual(wallet.balance, 900)
+        self.assertEqual(wallet2.balance, 1100)
 
 
     def test_create_transaction_api_with_invalid_sender_wallet(self):
