@@ -82,7 +82,8 @@ class Currency(models.Model):
                 self.initial_balance = 0
 
         if self.admin.wallets.filter(currency=self).count() == 0:
-            wallet = Wallet(user=self.admin, currency=self, balance=0)
+            wallet = Wallet(user=self.admin, currency=self,
+                            balance=self.initial_balance if self.market_cap == -1 else self.market_cap)
             wallet.save()
             self.admin.wallets.add(wallet)
 
@@ -216,7 +217,7 @@ class Transaction(models.Model):
             self.receiver_signature = self.receiver.sign(
                 f"{self.sender.user.username} sent {self.amount} to {self.receiver.user.username}")
             super().save(*args, **kwargs)
-            if self.sender.balance >= self.amount:
+            if self.sender.balance >= self.amount and self.amount > 0:
                 self.sender.withdraw(self.amount)
                 self.receiver.deposit(self.amount)
                 self.after_sender_amount_snapshot = self.sender.balance
@@ -227,4 +228,4 @@ class Transaction(models.Model):
         return self.sender.currency == self.currency and self.receiver.currency == self.currency
 
     def validate_amount(self):
-        return self.sender_amount_snapshot - self.amount == self.after_sender_amount_snapshot and self.receiver_amount_snapshot + self.amount == self.after_receiver_amount_snapshot
+        return (self.sender_amount_snapshot - self.amount == self.after_sender_amount_snapshot and self.receiver_amount_snapshot + self.amount == self.after_receiver_amount_snapshot) or self.amount > 0

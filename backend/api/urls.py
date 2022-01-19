@@ -20,4 +20,6 @@ urlpatterns = [
 
     path("wallet/create", views.wallet_create, name="wallet_create"),
     path("wallet/delete", views.currency_leave, name="wallet_delete"),
+
+    path("transaction/create", views.transaction_create, name="transaction_create"),
 ]
